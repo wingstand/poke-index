@@ -9,12 +9,14 @@ import SwiftUI
 
 struct PokemonView: View {
   // Scale the images so their height (and width) is 3 * the body height
-  @ScaledMetric(relativeTo: .body) var imageHeight = UIFont.preferredFont(forTextStyle: .body).lineHeight * 3
+  @ScaledMetric(relativeTo: .body) var imageHeight = UIFont.preferredFont(forTextStyle: .body).lineHeight * 4
 
   @Environment(\.managedObjectContext) private var viewContext
 
   @ObservedObject var pokemon: Pokemon
+
   @FetchRequest private var statistics: FetchedResults<Statistic>
+  @FetchRequest private var types: FetchedResults<PokemonType>
 
   init(pokemon: Pokemon) {
     self.pokemon = pokemon
@@ -22,6 +24,10 @@ struct PokemonView: View {
     _statistics = FetchRequest<Statistic>(sortDescriptors: [NSSortDescriptor(keyPath: \Statistic.rawKind, ascending: true)],
                                           predicate: NSPredicate(format: "pokemon = %@", pokemon),
                                           animation: .default)
+    
+    _types = FetchRequest<PokemonType>(sortDescriptors: [NSSortDescriptor(keyPath: \PokemonType.slot, ascending: true)],
+                                       predicate: NSPredicate(format: "pokemon = %@", pokemon),
+                                       animation: .default)
   }
   
   var body: some View {
@@ -33,7 +39,7 @@ struct PokemonView: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: imageHeight, height: imageHeight, alignment: .center)
           
-          VStack(alignment: .leading) {
+          VStack(alignment: .leading, spacing: 2) {
             Text(pokemon.name?.capitalized ?? "Anonymous")
               .font(.headline)
             
@@ -42,25 +48,30 @@ struct PokemonView: View {
                 .font(.body)
                 .foregroundColor(.secondary)
             }
+            
+            if pokemon.weight > 0 && pokemon.height > 0 {
+              Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
+                .font(.callout)
+                .foregroundColor(.primary)
+            }
+            
+            HStack(spacing: 10) {
+              ForEach(types) {
+                type in
+                
+                Group {
+                  Text(type.kind.description.uppercased())
+                    .font(.footnote)
+                    .foregroundColor(.white)
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 6)
+                }
+                .background(type.color)
+                .cornerRadius(4)
+                .padding(.top, 2)
+              }
+            }
           }
-        }
-      }
-      
-      Section {
-        HStack {
-          Text("Height")
-          Spacer()
-          Text(pokemon.height == 0 ? "Unknown" : pokemon.heightDescription)
-            .font(.body)
-            .foregroundColor(.secondary)
-        }
-        
-        HStack {
-          Text("Weight")
-          Spacer()
-          Text(pokemon.weight == 0 ? "Unknown" : pokemon.weightDescription)
-            .font(.body)
-            .foregroundColor(.secondary)
         }
       }
       

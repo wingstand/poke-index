@@ -140,9 +140,9 @@ class DataService {
         self.createPokemon(from: result)
       }
       
-//      if let nextPageUrl = URL(string: result.next) {
-//        loadPokemon(from: nextPageUrl)
-//      }
+      if let nextPageUrl = URL(string: result.next) {
+        loadPokemon(from: nextPageUrl)
+      }
     }
     catch {
       NSLog("failed to download Pokémon: \(error.localizedDescription)")
@@ -251,6 +251,18 @@ class DataService {
         statistic.kind = kind
         statistic.baseValue = Int16(stat.base_stat)
         statistic.effort = Int16(stat.effort)
+      }
+      
+      for type in result.types {
+        guard let kind = PokemonType.Kind.from(name: type.type.name) else {
+          continue
+        }
+        
+        let pokemonType = PokemonType(context: context)
+        
+        pokemonType.pokemon = pokemon
+        pokemonType.slot = Int16(type.slot)
+        pokemonType.kind = kind
       }
       
       try context.save()

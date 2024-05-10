@@ -61,7 +61,12 @@ extension PersistenceController {
                     .init(base_stat: 65, effort: 0, stat: .init(name: "special-defense")),
                     .init(base_stat: 48, effort: 0, stat: .init(name: "defense")),
                     .init(base_stat: 35, effort: 2, stat: .init(name: "speed"))
+                   ],
+                   types: [
+                    .init(slot: 1, type: .init(name: "fairy")),
+                    .init(slot: 2, type: .init(name: "poison"))
                    ])
+    
   }
   
   private func makePokemon(number: Int, name: String, imageUrl: String, weight: Int, height: Int, order: Int) -> Pokemon {

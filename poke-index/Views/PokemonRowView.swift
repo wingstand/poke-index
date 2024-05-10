@@ -36,7 +36,7 @@ struct PokemonRowView: View {
             .foregroundColor(.secondary)
         }
         
-        if pokemon.weight > 0 {
+        if pokemon.weight > 0 && pokemon.height > 0 {
           Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
             .font(.callout)
             .foregroundColor(.primary)
@@ -49,7 +49,8 @@ struct PokemonRowView: View {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
     }
-    else if pokemon.imageUrl != nil {
+    
+    if pokemon.imageUrl != nil {
       DataService.shared.loadImage(for: pokemon)
     }
     else if pokemon.imageUrl == nil  {

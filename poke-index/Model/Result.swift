@@ -25,6 +25,15 @@ struct Result {
       let front_default: String?
     }
     
+    struct Kind: Decodable {
+      struct Kind: Decodable {
+        let name: String
+      }
+      
+      let slot: Int
+      let type: Kind
+    }
+    
     struct Statistic: Decodable {
       struct Stat: Decodable {
         let name: String
@@ -43,5 +52,6 @@ struct Result {
     let base_experience: Int
     let order: Int
     let stats: [Statistic]
+    let types: [Kind]
   }
 }
