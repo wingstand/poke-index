@@ -20,11 +20,19 @@ struct PokemonRowView: View {
     let imageWidth = imageHeight
     
     HStack(alignment: .center, spacing: 10) {
-      image
-        .resizable()
-        .aspectRatio(contentMode: .fit)
+      if let image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: imageWidth, height: imageHeight, alignment: .center)
+          .clipped()
+      }
+      else {
+        Group {
+          ProgressView()
+        }
         .frame(width: imageWidth, height: imageHeight, alignment: .center)
-        .clipped()
+      }
       
       VStack(alignment: .leading, spacing: 1) {
         Text(pokemon.name?.capitalized ?? "Anonymous")
@@ -45,7 +53,7 @@ struct PokemonRowView: View {
     }
   }
   
-  private var image: Image {
+  private var image: Image? {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
     }
@@ -57,7 +65,7 @@ struct PokemonRowView: View {
       DataService.shared.loadPokemon(pokemon)
     }
     
-    return Image(systemName: "questionmark")
+    return nil
   }
 }
 

@@ -31,14 +31,26 @@ struct PokemonView: View {
   }
   
   var body: some View {
+    let imageHeight = self.imageHeight
+    let imageWidth = imageHeight
+  
     List {
       Section {
         HStack(alignment: .center, spacing: 10) {
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: imageHeight, height: imageHeight, alignment: .center)
-          
+          if let image {
+            image
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: imageWidth, height: imageHeight, alignment: .center)
+              .clipped()
+          }
+          else {
+            Group {
+              ProgressView()
+            }
+            .frame(width: imageWidth, height: imageHeight, alignment: .center)
+          }
+                    
           VStack(alignment: .leading, spacing: 2) {
             Text(pokemon.name?.capitalized ?? "Anonymous")
               .font(.headline)
@@ -88,18 +100,19 @@ struct PokemonView: View {
     .navigationTitle(pokemon.name?.capitalized ?? "Pokémon")
   }
   
-  private var image: Image {
+  private var image: Image? {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
     }
-    else if pokemon.imageUrl != nil {
+    
+    if pokemon.imageUrl != nil {
       DataService.shared.loadImage(for: pokemon)
     }
     else if pokemon.imageUrl == nil  {
       DataService.shared.loadPokemon(pokemon)
     }
     
-    return Image(systemName: "questionmark")
+    return nil
   }
   
   private var totalStatistic: Int {
