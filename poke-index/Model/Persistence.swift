@@ -49,7 +49,7 @@ extension PersistenceController {
   private static var clefairy: Result.Pokemon {
     Result.Pokemon(id: 35,
                    name: "clefairy",
-                   sprites: .init(front_default: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/35.png"),
+                   sprites: .init(front_default: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png"),
                    height: 6,
                    weight: 75,
                    base_experience: 113,

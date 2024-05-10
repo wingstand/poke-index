@@ -67,20 +67,10 @@ struct PokemonView: View {
       if !statistics.isEmpty {
         Section {
           ForEach(statistics) {
-            statistic in
-            
-            HStack {
-              Text(statistic.kind.description)
-                .font(.body)
-                .foregroundColor(.primary)
-
-              Spacer()
-
-              Text(statistic.baseValue.description)
-                .font(.body)
-                .foregroundColor(.secondary)
-            }
+            statistic in StatisticView(statistic: statistic)
           }
+
+          TotalStatisticView(total: totalStatistic)
         }
       }
     }
@@ -99,6 +89,10 @@ struct PokemonView: View {
     }
     
     return Image(systemName: "questionmark")
+  }
+  
+  private var totalStatistic: Int {
+    return statistics.reduce(0, { $0 + Int($1.baseValue) })
   }
 }
 

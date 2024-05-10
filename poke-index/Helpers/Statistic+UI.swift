@@ -5,7 +5,7 @@
 //  Created by Gary Meehan on 10/05/2024.
 //
 
-import Foundation
+import SwiftUI
 
 extension Statistic.Kind: CustomStringConvertible {
   var description: String {
@@ -22,6 +22,32 @@ extension Statistic.Kind: CustomStringConvertible {
       return "Special Defense"
     case .speed:
       return "Speed"
+    }
+  }
+}
+
+extension Statistic {
+  var color: Color {
+    if baseValue < 30 {
+      return .red
+    }
+    else if baseValue < 60 {
+      return .orange
+    }
+    else if baseValue < 90 {
+      return .yellow
+    }
+    else if baseValue < 120 {
+      return .green
+    }
+    else if baseValue < 150 {
+      return .cyan
+    }
+    else if baseValue < 180 {
+      return .blue
+    }
+    else {
+      return .purple
     }
   }
 }
