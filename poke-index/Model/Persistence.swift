@@ -57,9 +57,9 @@ extension PersistenceController {
                    stats: [
                     .init(base_stat: 70, effort: 2, stat: .init(name: "hp")),
                     .init(base_stat: 45, effort: 9, stat: .init(name: "attack")),
-                    .init(base_stat: 60, effort: 0, stat: .init(name: "special-attack")),
+                    .init(base_stat: 190, effort: 0, stat: .init(name: "special-attack")),
                     .init(base_stat: 65, effort: 0, stat: .init(name: "special-defense")),
-                    .init(base_stat: 48, effort: 0, stat: .init(name: "defense")),
+                    .init(base_stat: 148, effort: 0, stat: .init(name: "defense")),
                     .init(base_stat: 35, effort: 2, stat: .init(name: "speed"))
                    ],
                    types: [

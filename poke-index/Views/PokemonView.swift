@@ -107,15 +107,11 @@ struct PokemonView: View {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
     }
-    
-    if pokemon.imageUrl != nil {
-      DataService.shared.loadImage(for: pokemon)
+    else {
+      DataService.shared.startAnyNecessaryDownloads(forPokemon: pokemon)
+      
+      return nil
     }
-    else if pokemon.imageUrl == nil  {
-      DataService.shared.loadPokemon(pokemon)
-    }
-    
-    return nil
   }
   
   private var totalStatistic: Int {

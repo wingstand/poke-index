@@ -226,6 +226,15 @@ class DataService {
   
   // MARK: - loading individual Pokémon
   
+  func startAnyNecessaryDownloads(forPokemon pokemon: Pokemon) {
+    if pokemon.imageUrl != nil {
+      loadImage(for: pokemon)
+    }
+    else if pokemon.imageUrl == nil  {
+      loadPokemon(pokemon)
+    }
+  }
+  
   func loadPokemon(_ pokemon: Pokemon) {
     do {
       guard let url = pokemon.url else {

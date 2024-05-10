@@ -27,27 +27,31 @@ extension Statistic.Kind: CustomStringConvertible {
 }
 
 extension Statistic {
-  var color: Color {
-    if baseValue < 30 {
+  static func color(forValue value: Int16) -> Color {
+    if value < 30 {
       return .red
     }
-    else if baseValue < 60 {
+    else if value < 60 {
       return .orange
     }
-    else if baseValue < 90 {
+    else if value < 90 {
       return .yellow
     }
-    else if baseValue < 120 {
+    else if value < 120 {
       return .green
     }
-    else if baseValue < 150 {
+    else if value < 150 {
       return .cyan
     }
-    else if baseValue < 180 {
+    else if value < 180 {
       return .blue
     }
     else {
       return .purple
     }
+  }
+  
+  var color: Color {
+    return Self.color(forValue: baseValue)
   }
 }

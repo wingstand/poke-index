@@ -31,7 +31,7 @@ struct StatisticView: View {
         .progressViewStyle(.linear)
         .padding(.vertical, 0)
         .cornerRadius(4)
-        .tint(statistic.color)
+        .tint(Statistic.color(forValue: value))
     }
     .onReceive(timer) {
       input in
