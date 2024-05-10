@@ -69,6 +69,50 @@ class DataService {
     }
   }
   
+  func pokemonType(forPokemon pokemon: Pokemon, kind: PokemonType.Kind) -> PokemonType? {
+    guard let context else {
+      return nil
+    }
+    
+    let request = PokemonType.fetchRequest()
+    
+    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+      NSPredicate(format: "pokemon = %@", pokemon),
+      NSPredicate(format: "rawKind = %i", kind.rawValue)
+    ])
+    
+    do {
+      return try context.fetch(request).first
+    }
+    catch {
+      NSLog("failed to search for Pokémon type: \(error.localizedDescription)")
+      
+      return nil
+    }
+  }
+  
+  func statistic(forPokemon pokemon: Pokemon, kind: Statistic.Kind) -> Statistic? {
+    guard let context else {
+      return nil
+    }
+    
+    let request = Statistic.fetchRequest()
+    
+    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+      NSPredicate(format: "pokemon = %@", pokemon),
+      NSPredicate(format: "rawKind = %i", kind.rawValue)
+    ])
+    
+    do {
+      return try context.fetch(request).first
+    }
+    catch {
+      NSLog("failed to search for Pokémon statistic: \(error.localizedDescription)")
+      
+      return nil
+    }
+  }
+  
   // MARK: internal helper functions
   
   private func save() {
@@ -156,7 +200,7 @@ class DataService {
       }
       
       for item in result.results {
-        let pokemon = Pokemon(context: context)
+        let pokemon = pokemon(forName: item.name) ?? Pokemon(context: context)
         
         pokemon.name = item.name
         
@@ -245,7 +289,7 @@ class DataService {
           continue
         }
          
-        let statistic = Statistic(context: context)
+        let statistic = statistic(forPokemon: pokemon, kind: kind) ?? Statistic(context: context)
         
         statistic.pokemon = pokemon
         statistic.kind = kind
@@ -258,7 +302,7 @@ class DataService {
           continue
         }
         
-        let pokemonType = PokemonType(context: context)
+        let pokemonType = pokemonType(forPokemon: pokemon, kind: kind) ?? PokemonType(context: context)
         
         pokemonType.pokemon = pokemon
         pokemonType.slot = Int16(type.slot)
@@ -278,7 +322,7 @@ class DataService {
         throw DataServiceError.noContext
       }
       
-      let pokemon = Pokemon(context: context)
+      let pokemon = pokemon(forName: result.name) ?? Pokemon(context: context)
 
       updatePokemon(pokemon, from: result)
     }

@@ -52,18 +52,21 @@ struct PokemonView: View {
           }
                     
           VStack(alignment: .leading, spacing: 2) {
-            Text(pokemon.name?.capitalized ?? "Anonymous")
-              .font(.headline)
-            
             if pokemon.number > 0 {
               Text(String(format: "%04d", pokemon.number))
-                .font(.body)
-                .foregroundColor(.secondary)
+                .font(.headline)
+                .foregroundColor(.primary)
             }
             
             if pokemon.weight > 0 && pokemon.height > 0 {
               Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
-                .font(.callout)
+                .font(.body)
+                .foregroundColor(.secondary)
+            }
+            
+            if pokemon.baseExperience > 0 {
+              Text("Base experience: \(pokemon.baseExperience)")
+                .font(.body)
                 .foregroundColor(.primary)
             }
             
