@@ -48,6 +48,9 @@ class DataService {
   /// context to be used when saving loaded items to the database
   var context: NSManagedObjectContext?
   
+  /// The URLs that are currently being downloaded. Tracked so we don't make multiple requests
+  private var pendingUrls: Set<URL> = []
+  
   // MARK: - look-up functions
   
   func pokemon(forName name: String) -> Pokemon? {
@@ -150,7 +153,8 @@ class DataService {
   
   func loadPokemon() {
     do {
-      guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/") else {
+      // Specify our own limit as the default (20) is a little low and leads to lots of requests.
+      guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=10") else {
         throw DataServiceError.badUrl
       }
       
@@ -236,25 +240,24 @@ class DataService {
   }
   
   func loadPokemon(_ pokemon: Pokemon) {
-    do {
-      guard let url = pokemon.url else {
-        throw DataServiceError.badUrl
-      }
-      
-      let request = URLRequest(url: url)
-      
-      let task = URLSession.shared.downloadTask(with: request) {
-        url, response, error in self.didLoadPokemon(pokemon, response: response, error: error)
-      }
-      
-      task.resume()
+    guard let url = pokemon.url, !pendingUrls.contains(url) else {
+      return
     }
-    catch {
-      NSLog("cannot load Pokémon: \(error.localizedDescription)")
+    
+    pendingUrls.insert(url)
+    
+    NSLog("starting download of \(url)")
+    
+    let request = URLRequest(url: url)
+    
+    let task = URLSession.shared.downloadTask(with: request) {
+      _, response, error in self.didLoadPokemon(pokemon, from: url, response: response, error: error)
     }
+    
+    task.resume()
   }
   
-  private func didLoadPokemon(_ pokemon: Pokemon, response: URLResponse?, error: Error?) {
+  private func didLoadPokemon(_ pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
     do {
       if let error {
         throw error
@@ -269,6 +272,7 @@ class DataService {
       
       DispatchQueue.main.async {
         self.updatePokemon(pokemon, from: result)
+        self.pendingUrls.remove(url)
       }
     }
     catch {
@@ -343,20 +347,24 @@ class DataService {
   // MARK: - loading Pokemon image data
   
   func loadImage(for pokemon: Pokemon) {
-    guard let url = pokemon.imageUrl else {
+    guard let url = pokemon.imageUrl, !pendingUrls.contains(url) else {
       return
     }
+    
+    pendingUrls.insert(url)
+    
+    NSLog("starting download of \(url)")
     
     let request = URLRequest(url: url)
     
     let task = URLSession.shared.downloadTask(with: request) {
-      url, response, error in self.didLoadImage(for: pokemon, response: response, error: error)
+      _, response, error in self.didLoadImage(for: pokemon, from: url, response: response, error: error)
     }
     
     task.resume()
   }
   
-  private func didLoadImage(for pokemon: Pokemon, response: URLResponse?, error: Error?) {
+  private func didLoadImage(for pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
     do {
       guard let localUrl = response?.url else {
         throw DataServiceError.noData
@@ -367,6 +375,7 @@ class DataService {
       DispatchQueue.main.async {
         pokemon.imageData = data
         self.save()
+        self.pendingUrls.remove(url)
       }
     }
     catch {
