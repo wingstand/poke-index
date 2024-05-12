@@ -37,50 +37,15 @@ struct PokemonView: View {
     List {
       Section {
         HStack(alignment: .center, spacing: 10) {
-          if let image {
-            image
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(height: imageHeight, alignment: .center)
-              .clipped()
-          }
-          else {
-            Group {
-              ProgressView()
-            }
-            .frame(width: imageHeight, height: imageHeight, alignment: .center)
-          }
+          imageView
           
-          VStack(alignment: .leading, spacing: 2) {
-            if pokemon.number > 0 {
-              Text("#\(pokemon.number)")
-                .font(.headline)
-                .foregroundColor(.primary)
-            }
-            
-            if pokemon.weight > 0 && pokemon.height > 0 {
-              Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
-                .font(.body)
-                .foregroundColor(.secondary)
-            }
-            
-            if pokemon.baseExperience > 0 {
-              Text("Base experience: \(pokemon.baseExperience)")
-                .font(.body)
-                .foregroundColor(.primary)
-            }
-            
-            HStack(spacing: 10) {
-              PokemonTypeView(pokemon: pokemon, slot: 1)
-              PokemonTypeView(pokemon: pokemon, slot: 2)
-            }
-          }
-          .background(
-            // Whenever the height of the text view changes, we stash it in the preferences
-            GeometryReader {
-              proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
-            }
-          )
+          textView
+            .background(
+              // Whenever the height of the text view changes, we stash it in the preferences
+              GeometryReader {
+                proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
+              }
+            )
         }
       }
       
@@ -91,7 +56,7 @@ struct PokemonView: View {
         StatisticView(pokemon: pokemon, statistic: .specialAttack)
         StatisticView(pokemon: pokemon, statistic: .specialDefense)
         StatisticView(pokemon: pokemon, statistic: .speed)
-
+        
         TotalStatisticView(pokemon: pokemon)
       }
     }
@@ -104,6 +69,64 @@ struct PokemonView: View {
       // large font.
       DispatchQueue.main.async {
         imageHeight = min(128, value)
+      }
+    }
+  }
+  
+  private var textView: some View {
+    VStack(alignment: .leading, spacing: 3) {
+      if horizontalSizeClass == .compact && verticalSizeClass == .compact {
+          HStack {
+            Text("#\(pokemon.number)")
+              .font(.headline)
+              .foregroundColor(.primary)
+            
+            Spacer()
+            PokemonTypeView(pokemon: pokemon, slot: 1)
+          }
+
+        HStack {
+          Text("\(pokemon.weightDescription), \(pokemon.heightDescription), base experience: \(pokemon.baseExperience)")
+            .font(.body)
+            .foregroundColor(.secondary)
+          
+          Spacer()
+          PokemonTypeView(pokemon: pokemon, slot: 2)
+        }
+      }
+      else {
+        Text("#\(pokemon.number)")
+          .font(.headline)
+          .foregroundColor(.primary)
+        
+        Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
+          .font(.body)
+          .foregroundColor(.secondary)
+        
+        Text("Base experience: \(pokemon.baseExperience)")
+          .font(.body)
+          .foregroundColor(.primary)
+        
+        HStack(spacing: 10) {
+          PokemonTypeView(pokemon: pokemon, slot: 1)
+          PokemonTypeView(pokemon: pokemon, slot: 2)
+        }
+      }
+    }
+  }
+
+  private var imageView: some View {
+    Group {
+      if let image = self.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(height: imageHeight, alignment: .center)
+          .clipped()
+      }
+      else {
+        ProgressView()
+          .frame(width: imageHeight, height: imageHeight, alignment: .center)
       }
     }
   }
