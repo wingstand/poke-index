@@ -20,9 +20,15 @@ struct PokemonRowView: View {
       value = max(value, nextValue())
     }
   }
-
-  @Environment(\.horizontalSizeClass) var horizontalSizeClass
-  @Environment(\.verticalSizeClass) var verticalSizeClass
+  
+  @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Environment(\.verticalSizeClass) private var verticalSizeClass
+  
+  /// The persistence controller, which controls access to the Core Data
+  /// store. Uses the shared one by default, but previews set it to the
+  /// preview controller
+  var persistence: PersistenceController = .shared
   
   /// The Pokémon this row displays.
   @ObservedObject var pokemon: Pokemon
@@ -79,19 +85,39 @@ struct PokemonRowView: View {
   /// - Returns: The text component of this row in regular mode. This displays three lines of text.
   private var regularTextView: some View {
     VStack(alignment: .leading, spacing: 1) {
-      Text(pokemon.name?.capitalized ?? "Anonymous")
-        .font(.headline)
+      // We use clear text if we don't have information to keep the height
+      // consistent and not distract the user with unnecessary info
+      
+      if let name = pokemon.name {
+        Text(name.capitalized)
+          .font(.headline)
+      }
+      else {
+        Text("Anonymous")
+          .font(.headline)
+          .foregroundColor(.clear)
+      }
       
       if pokemon.number > 0 {
-        Text(String(format: "%04d", pokemon.number))
+        Text("#\(pokemon.number)")
           .font(.body)
           .foregroundColor(.secondary)
+      }
+      else {
+        Text("#0")
+          .font(.body)
+          .foregroundColor(.clear)
       }
       
       if pokemon.weight > 0 && pokemon.height > 0 {
         Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
           .font(.callout)
           .foregroundColor(.primary)
+      }
+      else {
+        Text("Unknown weight and height")
+          .font(.callout)
+          .foregroundColor(.clear)
       }
     }
   }
@@ -119,8 +145,8 @@ struct PokemonRowView: View {
       return Image(uiImage: uiImage)
     }
     else {
-      DataService.shared.startAnyNecessaryDownloads(forPokemon: pokemon)
-    
+      persistence.startNextDownload(forPokemon: pokemon)
+      
       return nil
     }
   }
@@ -131,6 +157,7 @@ struct PokemonRowView_Previews: PreviewProvider {
     let persistence = PersistenceController.preview
     let pokemon = persistence.pokemon(forName: "clefairy")!
     
-    PokemonRowView(pokemon: pokemon)
+    PokemonRowView(persistence: persistence, pokemon: pokemon)
+      .environment(\.managedObjectContext, persistence.container.viewContext)
   }
 }

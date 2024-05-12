@@ -8,32 +8,32 @@
 import SwiftUI
 
 struct PokemonView: View {
-  // Scale the images so their height (and width) is 3 * the body height
-  @ScaledMetric(relativeTo: .body) var imageHeight = UIFont.preferredFont(forTextStyle: .body).lineHeight * 4
+  /// Preference key used to track the height of text component of this view, which
+  /// we use to constrain the image height
+  private struct TextHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+      value = max(value, nextValue())
+    }
+  }
 
   @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+  /// The persistence controller, which controls access to the Core Data
+  /// store. Uses the shared one by default, but previews set it to the
+  /// preview controller.
+  var persistence: PersistenceController = .shared
+
+  /// The Pokémon this view displays.
   @ObservedObject var pokemon: Pokemon
-
-  @FetchRequest private var statistics: FetchedResults<Statistic>
-  @FetchRequest private var types: FetchedResults<PokemonType>
-
-  init(pokemon: Pokemon) {
-    self.pokemon = pokemon
-    
-    _statistics = FetchRequest<Statistic>(sortDescriptors: [NSSortDescriptor(keyPath: \Statistic.rawKind, ascending: true)],
-                                          predicate: NSPredicate(format: "pokemon = %@", pokemon),
-                                          animation: .default)
-    
-    _types = FetchRequest<PokemonType>(sortDescriptors: [NSSortDescriptor(keyPath: \PokemonType.slot, ascending: true)],
-                                       predicate: NSPredicate(format: "pokemon = %@", pokemon),
-                                       animation: .default)
-  }
   
+  /// The height of the image displayed by this view.
+  @State private var imageHeight: CGFloat = 0
+
   var body: some View {
-    let imageHeight = self.imageHeight
-    let imageWidth = imageHeight
-  
     List {
       Section {
         HStack(alignment: .center, spacing: 10) {
@@ -41,19 +41,19 @@ struct PokemonView: View {
             image
               .resizable()
               .aspectRatio(contentMode: .fit)
-              .frame(width: imageWidth, height: imageHeight, alignment: .center)
+              .frame(height: imageHeight, alignment: .center)
               .clipped()
           }
           else {
             Group {
               ProgressView()
             }
-            .frame(width: imageWidth, height: imageHeight, alignment: .center)
+            .frame(width: imageHeight, height: imageHeight, alignment: .center)
           }
-                    
+          
           VStack(alignment: .leading, spacing: 2) {
             if pokemon.number > 0 {
-              Text(String(format: "%04d", pokemon.number))
+              Text("#\(pokemon.number)")
                 .font(.headline)
                 .foregroundColor(.primary)
             }
@@ -71,36 +71,41 @@ struct PokemonView: View {
             }
             
             HStack(spacing: 10) {
-              ForEach(types) {
-                type in
-                
-                Group {
-                  Text(type.kind.description.uppercased())
-                    .font(.footnote)
-                    .foregroundColor(.white)
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 6)
-                }
-                .background(type.color)
-                .cornerRadius(4)
-                .padding(.top, 2)
-              }
+              PokemonTypeView(pokemon: pokemon, slot: 1)
+              PokemonTypeView(pokemon: pokemon, slot: 2)
             }
           }
+          .background(
+            // Whenever the height of the text view changes, we stash it in the preferences
+            GeometryReader {
+              proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
+            }
+          )
         }
       }
       
-      if !statistics.isEmpty {
-        Section {
-          ForEach(statistics) {
-            statistic in StatisticView(statistic: statistic)
-          }
+      Section {
+        StatisticView(pokemon: pokemon, statistic: .hp)
+        StatisticView(pokemon: pokemon, statistic: .attack)
+        StatisticView(pokemon: pokemon, statistic: .defense)
+        StatisticView(pokemon: pokemon, statistic: .specialAttack)
+        StatisticView(pokemon: pokemon, statistic: .specialDefense)
+        StatisticView(pokemon: pokemon, statistic: .speed)
 
-          TotalStatisticView(total: totalStatistic)
-        }
+        TotalStatisticView(pokemon: pokemon)
       }
     }
     .navigationTitle(pokemon.name?.capitalized ?? "Pokémon")
+    .onPreferenceChange(TextHeightKey.self) {
+      value in
+      
+      // Constrain the image height to the text height. This is constrainted to a
+      // maximim of 128 since we want to leave room for the text if we're using a
+      // large font.
+      DispatchQueue.main.async {
+        imageHeight = min(128, value)
+      }
+    }
   }
   
   private var image: Image? {
@@ -108,25 +113,30 @@ struct PokemonView: View {
       return Image(uiImage: uiImage)
     }
     else {
-      DataService.shared.startAnyNecessaryDownloads(forPokemon: pokemon)
+      persistence.startNextDownload(forPokemon: pokemon)
       
       return nil
     }
   }
-  
-  private var totalStatistic: Int {
-    return statistics.reduce(0, { $0 + Int($1.baseValue) })
-  }
 }
 
 struct PokemonView_Previews: PreviewProvider {
+  struct Container: View {
+    var persistence: PersistenceController
+    @State var pokemon: Pokemon
+    
+    var body: some View {
+      NavigationStack {
+        PokemonView(persistence: persistence, pokemon: pokemon)
+      }
+      .environment(\.managedObjectContext, persistence.container.viewContext)
+    }
+  }
+  
   static var previews: some View {
     let persistence = PersistenceController.preview
     let pokemon = persistence.pokemon(forName: "clefairy")!
     
-    NavigationStack {
-      PokemonView(pokemon: pokemon)
-        .environment(\.managedObjectContext, persistence.container.viewContext)
-    }
+    Container(persistence: persistence, pokemon: pokemon)
   }
 }

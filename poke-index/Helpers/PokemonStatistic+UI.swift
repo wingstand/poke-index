@@ -1,5 +1,5 @@
 //
-//  Statistic+UI.swift
+//  PokemonStatistic+UI.swift
 //  poke-index
 //
 //  Created by Gary Meehan on 10/05/2024.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-extension Statistic.Kind: CustomStringConvertible {
+extension PokemonStatistic: CustomStringConvertible {
   var description: String {
     switch self {
     case .hp:
@@ -18,7 +18,7 @@ extension Statistic.Kind: CustomStringConvertible {
       return "Defense"
     case .specialAttack:
       return "Special Attack"
-    case .specialDefese:
+    case .specialDefense:
       return "Special Defense"
     case .speed:
       return "Speed"
@@ -26,7 +26,7 @@ extension Statistic.Kind: CustomStringConvertible {
   }
 }
 
-extension Statistic {
+extension PokemonStatistic {
   static func color(forValue value: Int16) -> Color {
     if value < 30 {
       return .red
@@ -49,9 +49,5 @@ extension Statistic {
     else {
       return .purple
     }
-  }
-  
-  var color: Color {
-    return Self.color(forValue: baseValue)
   }
 }

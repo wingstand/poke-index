@@ -8,53 +8,73 @@
 import SwiftUI
 
 struct StatisticView: View {
-  @State private var value: Int16 = 0
-  @State private var timer = Timer.publish(every: 1 / 30, on: .main, in: .common).autoconnect()
+  @Environment(\.managedObjectContext) private var viewContext
 
-  let statistic: Statistic
+  @State private var animatedValue: Int16 = 0
+  @State private var timer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
+
+  @ObservedObject var pokemon: Pokemon
+  let statistic: PokemonStatistic
+  
+  @State var ticks: Int = 0
   
   var body: some View {
+    let value = pokemon.value(forStatistic: statistic)
+    
     VStack {
       HStack {
-        Text(statistic.kind.description)
+        Text(statistic.description)
           .font(.body)
           .foregroundColor(.primary)
         
         Spacer()
         
-        Text(value.description)
+        Text(animatedValue.description)
           .font(.body)
           .foregroundColor(.secondary)
       }
       
-      ProgressView(value: Float(value) / 255.0)
+      ProgressView(value: Float(animatedValue) / 255.0)
         .progressViewStyle(.linear)
         .padding(.vertical, 0)
         .cornerRadius(4)
-        .tint(Statistic.color(forValue: value))
+        .tint(PokemonStatistic.color(forValue: animatedValue))
     }
     .onReceive(timer) {
       input in
       
-      value = min(statistic.baseValue, value + 3)
-
-      if value == statistic.baseValue {
-        self.timer.upstream.connect().cancel()
+      ticks += 1
+      
+      if value > 0 {
+        animatedValue = min(value, animatedValue + 3)
+        
+        if animatedValue == value {
+          self.timer.upstream.connect().cancel()
+        }
       }
     }
-  }
-  
-  var maximumValue: Float {
-    return Float(statistic.baseValue) / 255.0
   }
 }
 
 struct StatisticView_Previews: PreviewProvider {
-  static var previews: some View {
-    let persistence = PersistenceController.preview
-    let pokemon = persistence.pokemon(forName: "clefairy")!
-    let statistic: Statistic = pokemon.stats!.first(where: { _ in return true }) as! Statistic
+  struct Container: View {
+    var persistence: PersistenceController
+   
+    var body: some View {
+      StatisticView(pokemon: pokemon, statistic: .hp)
+        .environment(\.managedObjectContext, persistence.container.viewContext)
+    }
     
-    StatisticView(statistic: statistic)
+    var pokemon: Pokemon {
+      let pokemon = persistence.pokemon(forName: "clefairy")!
+      
+      persistence.startNextDownload(forPokemon: pokemon)
+
+      return pokemon
+    }
+  }
+  
+  static var previews: some View {
+    Container(persistence: PersistenceController.preview)
   }
 }
