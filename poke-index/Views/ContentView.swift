@@ -16,6 +16,11 @@ struct ContentView: View {
                 animation: .default)
   private var allPokemon: FetchedResults<Pokemon>
   
+  /// The persistence controller, which controls access to the Core Data
+  /// store. Uses the shared one by default, but previews set it to the
+  /// preview controller
+  var persistence: PersistenceController = .shared
+
   @State private var searchText = ""
   
   var body: some View {
@@ -45,10 +50,9 @@ struct ContentView: View {
       _ in updatePredicate()
     }
     .onAppear {
-      initializeDataService()
+      initializeAllPokemon()
       updatePredicate()
     }
-    .navigationTitle("Select Contact")
   }
   
   private func updatePredicate() {
@@ -68,26 +72,23 @@ struct ContentView: View {
     }
   }
   
-  private func initializeDataService() {
-    let dataService = DataService.shared
-    
-    dataService.context = viewContext
-  
+  private func initializeAllPokemon() {
     if allPokemon.isEmpty {
-      dataService.loadPokemon()
+      persistence.downloadAllPokemon()
     }
   }
   
   private func refreshAllPokemon() {
-    let dataService = DataService.shared
-    
-    dataService.deleteAllPokemon()
-    dataService.loadPokemon()
+    persistence.deleteAllPokemon()
+    persistence.downloadAllPokemon()
   }
 }
 
 struct ContentView_Previews: PreviewProvider {
   static var previews: some View {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    let persistence = PersistenceController.preview
+    
+    ContentView(persistence: persistence)
+      .environment(\.managedObjectContext, persistence.container.viewContext)
   }
 }

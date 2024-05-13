@@ -8,126 +8,158 @@
 import SwiftUI
 
 struct PokemonView: View {
-  // Scale the images so their height (and width) is 3 * the body height
-  @ScaledMetric(relativeTo: .body) var imageHeight = UIFont.preferredFont(forTextStyle: .body).lineHeight * 4
+  /// Preference key used to track the height of text component of this view, which
+  /// we use to constrain the image height
+  private struct TextHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+      value = max(value, nextValue())
+    }
+  }
 
   @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+  /// The persistence controller, which controls access to the Core Data
+  /// store. Uses the shared one by default, but previews set it to the
+  /// preview controller.
+  var persistence: PersistenceController = .shared
+
+  /// The Pokémon this view displays.
   @ObservedObject var pokemon: Pokemon
-
-  @FetchRequest private var statistics: FetchedResults<Statistic>
-  @FetchRequest private var types: FetchedResults<PokemonType>
-
-  init(pokemon: Pokemon) {
-    self.pokemon = pokemon
-    
-    _statistics = FetchRequest<Statistic>(sortDescriptors: [NSSortDescriptor(keyPath: \Statistic.rawKind, ascending: true)],
-                                          predicate: NSPredicate(format: "pokemon = %@", pokemon),
-                                          animation: .default)
-    
-    _types = FetchRequest<PokemonType>(sortDescriptors: [NSSortDescriptor(keyPath: \PokemonType.slot, ascending: true)],
-                                       predicate: NSPredicate(format: "pokemon = %@", pokemon),
-                                       animation: .default)
-  }
   
+  /// The height of the image displayed by this view.
+  @State private var imageHeight: CGFloat = 0
+
   var body: some View {
-    let imageHeight = self.imageHeight
-    let imageWidth = imageHeight
-  
     List {
       Section {
         HStack(alignment: .center, spacing: 10) {
-          if let image {
-            image
-              .resizable()
-              .aspectRatio(contentMode: .fit)
-              .frame(width: imageWidth, height: imageHeight, alignment: .center)
-              .clipped()
-          }
-          else {
-            Group {
-              ProgressView()
-            }
-            .frame(width: imageWidth, height: imageHeight, alignment: .center)
-          }
-                    
-          VStack(alignment: .leading, spacing: 2) {
-            Text(pokemon.name?.capitalized ?? "Anonymous")
-              .font(.headline)
-            
-            if pokemon.number > 0 {
-              Text(String(format: "%04d", pokemon.number))
-                .font(.body)
-                .foregroundColor(.secondary)
-            }
-            
-            if pokemon.weight > 0 && pokemon.height > 0 {
-              Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
-                .font(.callout)
-                .foregroundColor(.primary)
-            }
-            
-            HStack(spacing: 10) {
-              ForEach(types) {
-                type in
-                
-                Group {
-                  Text(type.kind.description.uppercased())
-                    .font(.footnote)
-                    .foregroundColor(.white)
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 6)
-                }
-                .background(type.color)
-                .cornerRadius(4)
-                .padding(.top, 2)
+          imageView
+          
+          textView
+            .background(
+              // Whenever the height of the text view changes, we stash it in the preferences
+              GeometryReader {
+                proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
               }
-            }
-          }
+            )
         }
       }
       
-      if !statistics.isEmpty {
-        Section {
-          ForEach(statistics) {
-            statistic in StatisticView(statistic: statistic)
-          }
-
-          TotalStatisticView(total: totalStatistic)
-        }
+      Section {
+        StatisticView(pokemon: pokemon, statistic: .hp)
+        StatisticView(pokemon: pokemon, statistic: .attack)
+        StatisticView(pokemon: pokemon, statistic: .defense)
+        StatisticView(pokemon: pokemon, statistic: .specialAttack)
+        StatisticView(pokemon: pokemon, statistic: .specialDefense)
+        StatisticView(pokemon: pokemon, statistic: .speed)
+        
+        TotalStatisticView(pokemon: pokemon)
       }
     }
     .navigationTitle(pokemon.name?.capitalized ?? "Pokémon")
+    .onPreferenceChange(TextHeightKey.self) {
+      value in
+      
+      // Constrain the image height to the text height. This is constrainted to a
+      // maximim of 128 since we want to leave room for the text if we're using a
+      // large font.
+      DispatchQueue.main.async {
+        imageHeight = min(128, value)
+      }
+    }
+  }
+  
+  private var textView: some View {
+    VStack(alignment: .leading, spacing: 3) {
+      if horizontalSizeClass == .compact && verticalSizeClass == .compact {
+          HStack {
+            Text("#\(pokemon.number)")
+              .font(.headline)
+              .foregroundColor(.primary)
+            
+            Spacer()
+            PokemonTypeView(pokemon: pokemon, slot: 1)
+          }
+
+        HStack {
+          Text("\(pokemon.weightDescription), \(pokemon.heightDescription), base experience: \(pokemon.baseExperience)")
+            .font(.body)
+            .foregroundColor(.secondary)
+          
+          Spacer()
+          PokemonTypeView(pokemon: pokemon, slot: 2)
+        }
+      }
+      else {
+        Text("#\(pokemon.number)")
+          .font(.headline)
+          .foregroundColor(.primary)
+        
+        Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
+          .font(.body)
+          .foregroundColor(.secondary)
+        
+        Text("Base experience: \(pokemon.baseExperience)")
+          .font(.body)
+          .foregroundColor(.primary)
+        
+        HStack(spacing: 10) {
+          PokemonTypeView(pokemon: pokemon, slot: 1)
+          PokemonTypeView(pokemon: pokemon, slot: 2)
+        }
+      }
+    }
+  }
+
+  private var imageView: some View {
+    Group {
+      if let image = self.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(height: imageHeight, alignment: .center)
+          .clipped()
+      }
+      else {
+        ProgressView()
+          .frame(width: imageHeight, height: imageHeight, alignment: .center)
+      }
+    }
   }
   
   private var image: Image? {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
     }
-    
-    if pokemon.imageUrl != nil {
-      DataService.shared.loadImage(for: pokemon)
+    else {
+      persistence.startNextDownload(forPokemon: pokemon)
+      
+      return nil
     }
-    else if pokemon.imageUrl == nil  {
-      DataService.shared.loadPokemon(pokemon)
-    }
-    
-    return nil
-  }
-  
-  private var totalStatistic: Int {
-    return statistics.reduce(0, { $0 + Int($1.baseValue) })
   }
 }
 
 struct PokemonView_Previews: PreviewProvider {
+  struct Container: View {
+    var persistence: PersistenceController
+    @State var pokemon: Pokemon
+    
+    var body: some View {
+      NavigationStack {
+        PokemonView(persistence: persistence, pokemon: pokemon)
+      }
+      .environment(\.managedObjectContext, persistence.container.viewContext)
+    }
+  }
+  
   static var previews: some View {
     let persistence = PersistenceController.preview
     let pokemon = persistence.pokemon(forName: "clefairy")!
     
-    NavigationStack {
-      PokemonView(pokemon: pokemon)
-        .environment(\.managedObjectContext, persistence.container.viewContext)
-    }
+    Container(persistence: persistence, pokemon: pokemon)
   }
 }

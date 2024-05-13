@@ -8,12 +8,14 @@
 import SwiftUI
 
 struct TotalStatisticView: View {
-  @State private var value: Int = 0
-  @State private var timer = Timer.publish(every: 1 / 30, on: .main, in: .common).autoconnect()
+  @State private var animatedValue: Int16 = 0
+  @State private var timer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
 
-  let total: Int
+  @ObservedObject var pokemon: Pokemon
   
   var body: some View {
+    let value = pokemon.totalStatistic
+
     HStack {
       Text("Total")
         .font(.headline)
@@ -21,24 +23,43 @@ struct TotalStatisticView: View {
       
       Spacer()
       
-      Text(value.description)
+      Text(animatedValue.description)
         .font(.body)
         .foregroundColor(.primary)
     }
     .onReceive(timer) {
       input in
       
-      value = min(total, value + 10)
-
-      if value == total {
-        self.timer.upstream.connect().cancel()
+      if value > 0 {
+        animatedValue = min(value, animatedValue + 10)
+        
+        if animatedValue == value {
+          self.timer.upstream.connect().cancel()
+        }
       }
     }
   }
 }
 
 struct TotalStatisticView_Previews: PreviewProvider {
+  struct Container: View {
+    var persistence: PersistenceController
+    
+    var body: some View {
+      TotalStatisticView(pokemon: pokemon)
+        .environment(\.managedObjectContext, persistence.container.viewContext)
+    }
+    
+    var pokemon: Pokemon {
+      let pokemon = persistence.pokemon(forName: "clefairy")!
+      
+      persistence.startNextDownload(forPokemon: pokemon)
+      
+      return pokemon
+    }
+  }
+  
   static var previews: some View {
-    TotalStatisticView(total: 300)
+    Container(persistence: PersistenceController.preview)
   }
 }

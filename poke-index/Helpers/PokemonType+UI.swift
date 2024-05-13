@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-extension PokemonType.Kind: CustomStringConvertible {
+extension PokemonType: CustomStringConvertible {
   var description: String {
     switch self {
     case .normal:
@@ -52,7 +52,7 @@ extension PokemonType.Kind: CustomStringConvertible {
 
 extension PokemonType {
   var color: Color {
-    switch kind {
+    switch self {
     case .normal:
       return .gray
     case .fire:
