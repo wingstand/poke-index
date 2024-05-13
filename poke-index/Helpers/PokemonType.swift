@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A wrapper around the type of a Pokémon, used for type correctness.
 enum PokemonType: Int16, CaseIterable {
   case normal
   case fire
@@ -27,10 +28,14 @@ enum PokemonType: Int16, CaseIterable {
   case steel
   case fairy
   
+  /// Constructs a type from a name.
+  /// - Parameter name: the name of the type
+  /// - Returns: the type with the givem name, `nil` if no such type.
   static func from(name: String) -> Self? {
     return allCases.first(where: { $0.name == name })
   }
   
+  /// The name of this type.
   var name: String {
     switch self {
     case .normal:

@@ -8,6 +8,9 @@
 import Foundation
 
 extension Pokemon {
+  /// Returns the value for the given statisic.
+  /// - Parameter statistic: the statistic to get.
+  /// - Returns: the value for `statistic`.
   func value(forStatistic statistic: PokemonStatistic) -> Int16 {
     switch statistic {
     case .hp:
@@ -25,6 +28,9 @@ extension Pokemon {
     }
   }
   
+  /// Sets the value for the given statistic,
+  /// - Parameter value: the value to set.
+  /// - Parameter statistic: the statistic to set.  
   func setValue(_ value: Int16, forStatistic statistic: PokemonStatistic) {
     switch statistic {
     case .hp:

@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// A wrapper around a statistic of a Pokémon, used for type correctness.
 enum PokemonStatistic: Int, CaseIterable {
   case hp
   case attack
@@ -14,11 +15,15 @@ enum PokemonStatistic: Int, CaseIterable {
   case specialAttack
   case specialDefense
   case speed
-  
+
+  /// Constructs a statistic from a name.
+  /// - Parameter name: the name of the type
+  /// - Returns: the statistic with the givem name, `nil` if no such type.
   static func from(name: String) -> Self? {
     return allCases.first(where: { $0.name == name })
   }
   
+  /// The name of the statistic.
   var name: String {
     switch self {
     case .hp:

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// The view for each row in the main Pokémon list view. This adjusts depending on
+/// A view for each row in the main Pokémon list view. This adjusts depending on
 /// whether we are in compact mode (i.e., landscape mode on an iPhone) or regular
 /// (everything else).
 struct PokemonRowView: View {
@@ -165,6 +165,8 @@ struct PokemonRowView: View {
     }
   }
 }
+
+// MARK: - previews
 
 struct PokemonRowView_Previews: PreviewProvider {
   static var previews: some View {

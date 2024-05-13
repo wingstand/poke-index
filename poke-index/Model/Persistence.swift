@@ -41,12 +41,14 @@ class PersistenceController {
   }
   
   static let shared = PersistenceController()
-   
+  
   let container: NSPersistentContainer
   
   /// The URLs that are currently being downloaded. Tracked so we don't make multiple requests
   private var pendingUrls: Set<URL> = []
   
+  /// Initializes this controller
+  /// - Parameter inMemory: whether the underlying container should be constructed in memory only
   init(inMemory: Bool = false) {
     container = NSPersistentContainer(name: "poke_index")
     
@@ -61,12 +63,15 @@ class PersistenceController {
         NSLog("cannot load stores: \(error.localizedDescription)")
       }
     })
-   
+    
     container.viewContext.automaticallyMergesChangesFromParent = true
   }
   
   // MARK: - look-up functions
   
+  /// Searches for a Pokémon by name. The search is case sensitive and matches complete names.
+  /// - Parameter name: the name of the Pokémon.
+  /// - Returns: the Pokémon with the given name, `nil` if no such object.
   func pokemon(forName name: String) -> Pokemon? {
     let request = Pokemon.fetchRequest()
     
@@ -81,7 +86,10 @@ class PersistenceController {
       return nil
     }
   }
- 
+  
+  /// Searches for a Pokémon by number.
+  /// - Parameter number: the number of the Pokémon.
+  /// - Returns: the Pokémon with the given number, `nil` if no such object.
   func pokemon(forNumber number: Int16) -> Pokemon? {
     let request = Pokemon.fetchRequest()
     
@@ -99,16 +107,17 @@ class PersistenceController {
   
   // MARK: - loading all Pokémon
   
+  /// Synchronously deletes all Pokémon from the data store.
   func deleteAllPokemon() {
     do {
       let context = container.viewContext
-
+      
       (try context.fetch(Pokemon.fetchRequest())).forEach({ context.delete($0) })
       
       try context.save()
       
       let userDefaults = UserDefaults.standard
-
+      
       userDefaults.set(false, forKey: Key.haveDownloadedAllPages)
       userDefaults.removeObject(forKey: Key.currentPageUrl)
       
@@ -119,7 +128,8 @@ class PersistenceController {
     }
   }
   
-  /// Download all the Pokémon from the server
+  /// Starts or resumes downloading all Pokémon from the server. If all Pokémon are on the
+  /// device, no download is made.
   func downloadAllPokemon() {
     do {
       let userDefaults = UserDefaults.standard
@@ -137,7 +147,7 @@ class PersistenceController {
         guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=100") else {
           throw PersistenceControllerError.badUrl
         }
- 
+        
         downloadPokemon(from: url)
       }
     }
@@ -146,6 +156,8 @@ class PersistenceController {
     }
   }
   
+  /// Downloads a page of Pokémon from the server.
+  /// - Parameter url: the URL used to request the page.
   private func downloadPokemon(from url: URL) {
     guard !pendingUrls.contains(url) else {
       return
@@ -165,8 +177,16 @@ class PersistenceController {
     task.resume()
   }
   
+  /// Callback function called when a page of Pokémon have been downloaded.
+  /// - Parameter url: the URL the page was downloaded from.
+  /// - Parameter response: the server's response, `nil` if there was no response.
+  /// - Parameter error: any error generated during the download process, `nil` if no error.
   private func didDownloadPokemon(from url: URL, response: URLResponse?, error: Error?) {
     do {
+      if let error {
+        throw error
+      }
+      
       guard let localUrl = response?.url else {
         throw PersistenceControllerError.noData
       }
@@ -177,16 +197,16 @@ class PersistenceController {
       DispatchQueue.main.async {
         self.createPokemon(from: result)
         self.pendingUrls.remove(url)
-
+        
         if let next = result.next, let nextPageUrl = URL(string: next) {
           self.downloadPokemon(from: nextPageUrl)
         }
         else {
           let userDefaults = UserDefaults.standard
-
+          
           userDefaults.set(true, forKey: Key.haveDownloadedAllPages)
           userDefaults.removeObject(forKey: Key.currentPageUrl)
-
+          
           NSLog("finished loading all pages of Pokémon")
         }
       }
@@ -196,6 +216,8 @@ class PersistenceController {
     }
   }
   
+  /// Creates Pokémon objects from a page of Pokémon data. Each result contains only a name and URL; we synthesize a nuber from the URL.
+  /// - Parameter result: a page of Pokémon data.
   private func createPokemon(from result: Result.AllPokemon) {
     do {
       let context = container.viewContext
@@ -227,6 +249,10 @@ class PersistenceController {
   
   // MARK: - loading individual Pokémon
   
+  /// Starts the next necessary download for a Pokémon. If the details haven't been downloaded,
+  /// the method starts downloading the details. If the Pokémon's image data hasn't been downloaded,
+  /// the method starts dowloading said data. Otherwise, nothing is done.
+  /// - Parameter pokemon: the Pokémon we might need to dowload.
   func startNextDownload(forPokemon pokemon: Pokemon) {
     if pokemon.imageData == nil {
       if pokemon.imageUrl == nil {
@@ -240,6 +266,8 @@ class PersistenceController {
     }
   }
   
+  /// Start downloading the details for a Pokémon.
+  /// - Parameter pokemon: the Pokémon whose details we need to dowload.
   private func downloadPokemon(_ pokemon: Pokemon) {
     guard let url = pokemon.url, !pendingUrls.contains(url) else {
       return
@@ -258,6 +286,11 @@ class PersistenceController {
     task.resume()
   }
   
+  /// Callback function called when a Pokémon has been downloaded.
+  /// - Parameter pokemon: the Pokémon whose details we're downloading.
+  /// - Parameter url: the URL the details were downloaded from.
+  /// - Parameter response: the server's response, `nil` if there was no response.
+  /// - Parameter error: any error generated during the download process, `nil` if no error.
   private func didDownLoadPokemon(_ pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
     do {
       if let error {
@@ -284,6 +317,9 @@ class PersistenceController {
     }
   }
   
+  /// Update a Pokémon with the given result.
+  /// - Parameter pokemon: the Pokémon to update.
+  /// - Parameter result: the details from the server.
   private func updatePokemon(_ pokemon: Pokemon, from result: Result.Pokemon) {
     do {
       let context = container.viewContext
@@ -318,7 +354,7 @@ class PersistenceController {
           pokemon.setType(type, forSlot: $0.slot)
         }
       }
-        
+      
       try context.save()
     }
     catch {
@@ -326,15 +362,10 @@ class PersistenceController {
     }
   }
   
- private func createPokemon(from result: Result.Pokemon) {
-    let context = container.viewContext
-    let pokemon = pokemon(forName: result.name) ?? Pokemon(context: context)
-    
-    updatePokemon(pokemon, from: result)
-  }
-  
   // MARK: - downloading Pokemon image data
   
+  /// Start downloading the image data for a Pokémon.
+  /// - Parameter pokemon: the Pokémon whose image data we need.
   private func downloadImage(forPokemon pokemon: Pokemon) {
     guard let url = pokemon.imageUrl, !pendingUrls.contains(url) else {
       return
@@ -353,6 +384,11 @@ class PersistenceController {
     task.resume()
   }
   
+  /// Callback function called when the image data for a Pokémon has been downloaded.
+  /// - Parameter pokemon: the Pokémon whose image we're downloading.
+  /// - Parameter url: the URL the image data was downloaded from.
+  /// - Parameter response: the server's response, `nil` if there was no response.
+  /// - Parameter error: any error generated during the download process, `nil` if no error.
   private func didDownLoadImage(for pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
     do {
       guard let localUrl = response?.url else {
@@ -372,7 +408,7 @@ class PersistenceController {
         catch {
           NSLog("cannot save image for Pokémon: \(error.localizedDescription)")
         }
-
+        
         self.pendingUrls.remove(url)
       }
     }
@@ -380,9 +416,12 @@ class PersistenceController {
       NSLog("cannot save image for Pokémon: \(error.localizedDescription)")
     }
   }
+}
 
-  // MARK: - previews and sample date
-  
+// MARK: - previews
+
+extension PersistenceController {
+  /// An in-memory controller used by previews.
   static var preview: PersistenceController = {
     let result = PersistenceController(inMemory: true)
     let viewContext = result.container.viewContext
@@ -406,6 +445,7 @@ class PersistenceController {
     return result
   }()
   
+  /// A sample result, based on Clefairy, used in previews.
   private static var clefairy: Result.Pokemon {
     Result.Pokemon(id: 35,
                    name: "clefairy",
@@ -430,6 +470,7 @@ class PersistenceController {
     
   }
   
+  /// A sample result, based on Zygarde 10 Power Construct, used in previews for testing long names
   private static var zygarde10PowerConstruct: Result.Pokemon {
     Result.Pokemon(id: 10118,
                    name: "zygarde-10-power-construct",
@@ -452,5 +493,14 @@ class PersistenceController {
                     .init(slot: 2, type: .init(name: "poison"))
                    ])
     
+  }
+  
+  /// Create a Pokémon from the given result.
+  /// - Parameter result: the details from the server.
+  private func createPokemon(from result: Result.Pokemon) {
+    let context = container.viewContext
+    let pokemon = pokemon(forName: result.name) ?? Pokemon(context: context)
+    
+    updatePokemon(pokemon, from: result)
   }
 }

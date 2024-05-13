@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Objects used to parse JSON results from the server
+/// Objects used to parse JSON results from the server.
 struct Result {
   struct AllPokemon: Decodable {
     struct Item : Decodable {

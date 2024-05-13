@@ -7,12 +7,17 @@
 
 import SwiftUI
 
+/// A view for a particular Pokémon statistic (e.g., Health Points).
 struct StatisticView: View {
   @Environment(\.managedObjectContext) private var viewContext
 
+  /// The Pokémon for which to display the statistic.
   @ObservedObject var pokemon: Pokemon
+  
+  /// The statistic to display.
   let statistic: PokemonStatistic
   
+  /// The body for this View.
   var body: some View {
     let value = pokemon.value(forStatistic: statistic)
     
@@ -39,6 +44,8 @@ struct StatisticView: View {
     .accessibilityLabel("\(statistic.description): \(value)")
   }
 }
+
+// MARK: - previews
 
 struct StatisticView_Previews: PreviewProvider {
   struct Container: View {

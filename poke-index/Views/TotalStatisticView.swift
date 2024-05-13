@@ -7,9 +7,12 @@
 
 import SwiftUI
 
+/// A view for displaying the total statistics for a Pokémon.
 struct TotalStatisticView: View {
+  /// The Pokémon for which to display the statisic.
   @ObservedObject var pokemon: Pokemon
   
+  /// The body for this view.
   var body: some View {
     let value = pokemon.totalStatistic
 
@@ -28,6 +31,8 @@ struct TotalStatisticView: View {
     .accessibilityLabel("Total: \(value)")
   }
 }
+
+// MARK: - previews
 
 struct TotalStatisticView_Previews: PreviewProvider {
   struct Container: View {

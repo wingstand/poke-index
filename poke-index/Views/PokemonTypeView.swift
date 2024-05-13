@@ -7,10 +7,15 @@
 
 import SwiftUI
 
+/// A view for displaying a type of a Pokémon
 struct PokemonTypeView: View {
+  /// The Pokémon whose type to display.
   @ObservedObject var pokemon: Pokemon
+
+  /// The slot of the type to display.
   let slot: Int
   
+  /// The body for this view.
   var body: some View {
     if let type = pokemon.type(forSlot: slot) {
       Group {
@@ -29,6 +34,8 @@ struct PokemonTypeView: View {
     }
   }
 }
+
+// MARK: - previews
 
 struct PokemonTypeView_Previews: PreviewProvider {
   static var previews: some View {

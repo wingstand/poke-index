@@ -8,6 +8,7 @@
 import SwiftUI
 
 extension PokemonStatistic: CustomStringConvertible {
+  /// The US English description of this statistic.
   var description: String {
     switch self {
     case .hp:
@@ -27,6 +28,9 @@ extension PokemonStatistic: CustomStringConvertible {
 }
 
 extension PokemonStatistic {
+  /// Returns the color to use for a particlar statistic value.
+  /// - Parameter value: the value of the statistic.
+  /// - Returns: the color to use for `value`.
   static func color(forValue value: Int16) -> Color {
     if value < 30 {
       return .red

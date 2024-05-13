@@ -11,6 +11,7 @@ import CoreData
 struct ContentView: View {
   @Environment(\.managedObjectContext) private var viewContext
 
+  /// The fetch request used to obtain Pokémon from the database.
   @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \Pokemon.number, ascending: true),
                                   NSSortDescriptor(keyPath: \Pokemon.name, ascending: true)],
                 animation: .default)
@@ -25,9 +26,14 @@ struct ContentView: View {
   /// to do this if we're previewing
   var shouldAutomaticallyDownloadAllPokemon = true
   
+  /// The search text used to filter the Pokémon we're displaying. This can either be part
+  /// of  a name (case-insensitive), or an exact number.
   @State private var searchText = ""
+  
+  /// The visibility of the columns of our split view. By default, we show all (well, both.
   @State private var columnVisibility = NavigationSplitViewVisibility.all
 
+  /// The body of this view.
   var body: some View {
     NavigationSplitView(columnVisibility: $columnVisibility) {
       List {
@@ -70,6 +76,8 @@ struct ContentView: View {
     }
   }
   
+  /// Updates the predicate used to control which Pokémon we display. If the search text
+  /// is non-empty, we  apply that; otherwise, we show all the Pokémon.
   private func updatePredicate() {
     if searchText.isEmpty {
       allPokemon.nsPredicate = NSPredicate(value: true)
@@ -87,17 +95,22 @@ struct ContentView: View {
     }
   }
   
+  /// Downloads any remaining Pokémon that we haven't already done so. This is _not_
+  /// done if we're previewing.
   private func initializeAllPokemon() {
     if shouldAutomaticallyDownloadAllPokemon {
       persistence.downloadAllPokemon()
     }
   }
   
+  /// Deletes all Pokémon in the store and starts downloading them again.
   private func refreshAllPokemon() {
     persistence.deleteAllPokemon()
     persistence.downloadAllPokemon()
   }
 }
+
+// MARK: - previews
 
 struct ContentView_Previews: PreviewProvider {
   static var previews: some View {

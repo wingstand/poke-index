@@ -83,5 +83,4 @@ extension Pokemon {
     
     return formatter
   }()
-  
 }

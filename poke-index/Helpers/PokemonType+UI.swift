@@ -8,6 +8,7 @@
 import SwiftUI
 
 extension PokemonType: CustomStringConvertible {
+  /// The US English description of this type
   var description: String {
     switch self {
     case .normal:
@@ -51,6 +52,7 @@ extension PokemonType: CustomStringConvertible {
 }
 
 extension PokemonType {
+  /// The color to use when displaying this type.
   var color: Color {
     switch self {
     case .normal:

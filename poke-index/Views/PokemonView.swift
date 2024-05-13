@@ -33,6 +33,7 @@ struct PokemonView: View {
   /// The height of the image displayed by this view.
   @State private var imageHeight: CGFloat = 0
 
+  /// The body for this view
   var body: some View {
     List {
       Section {
@@ -192,6 +193,8 @@ struct PokemonView: View {
     }
   }
 }
+
+// MARK: - previews
 
 struct PokemonView_Previews: PreviewProvider {
   struct Container: View {
