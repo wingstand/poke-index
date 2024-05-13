@@ -121,14 +121,13 @@ struct PokemonView: View {
         image
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(height: imageHeight, alignment: .center)
           .clipped()
       }
       else {
         ProgressView()
-          .frame(width: imageHeight, height: imageHeight, alignment: .center)
       }
     }
+    .frame(width: imageHeight, height: imageHeight, alignment: .center)
   }
   
   private var image: Image? {

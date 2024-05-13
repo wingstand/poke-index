@@ -25,6 +25,12 @@ extension Pokemon {
     return Self.measurementFormatter.string(from: measurement)
   }
   
+  /// Whether this Pokémon has been downloaded
+  var hasBeenDownloaded: Bool {
+    // If we've set the order to a non-zero value, we must have pulled the data from the server.
+    return order != 0
+  }
+  
   private static var measurementFormatter: MeasurementFormatter = {
     let numberFormatter = NumberFormatter()
     
