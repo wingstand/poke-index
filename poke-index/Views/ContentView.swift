@@ -21,6 +21,10 @@ struct ContentView: View {
   /// preview controller
   var persistence: PersistenceController = .shared
 
+  /// Whether the Pokémon are automatically downloaded. We don't want
+  /// to do this if we're previewing
+  var shouldAutomaticallyDownloadAllPokemon = true
+  
   @State private var searchText = ""
   @State private var columnVisibility = NavigationSplitViewVisibility.all
 
@@ -82,7 +86,7 @@ struct ContentView: View {
   }
   
   private func initializeAllPokemon() {
-    if allPokemon.isEmpty {
+    if shouldAutomaticallyDownloadAllPokemon {
       persistence.downloadAllPokemon()
     }
   }
@@ -97,7 +101,7 @@ struct ContentView_Previews: PreviewProvider {
   static var previews: some View {
     let persistence = PersistenceController.preview
     
-    ContentView(persistence: persistence)
+    ContentView(persistence: persistence, shouldAutomaticallyDownloadAllPokemon: false)
       .environment(\.managedObjectContext, persistence.container.viewContext)
   }
 }

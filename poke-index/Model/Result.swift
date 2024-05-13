@@ -16,7 +16,7 @@ struct Result {
     }
     
     let count: Int
-    let next: String
+    let next: String?
     let results: [Item]
   }
   
