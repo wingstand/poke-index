@@ -55,6 +55,8 @@ struct PokemonRowView: View {
         imageHeight = min(128, value)
       }
     }
+    .accessibilityElement()
+    .accessibility(label: Text("Pokémon number \(pokemon.number). \(pokemon.displayName)."))
   }
   
   /// - Returns: The text component of this view.

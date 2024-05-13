@@ -11,7 +11,7 @@ extension PokemonStatistic: CustomStringConvertible {
   var description: String {
     switch self {
     case .hp:
-      return "HP"
+      return "Health Points"
     case .attack:
       return "Attack"
     case .defense:
