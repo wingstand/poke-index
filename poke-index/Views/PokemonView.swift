@@ -44,6 +44,8 @@ struct PokemonView: View {
             textView
           }
         }
+        .accessibilityElement()
+        .accessibilityLabel(detailsAccessibilityText)
       }
       
       Section {
@@ -129,6 +131,36 @@ struct PokemonView: View {
         }
       }
     }
+  }
+  
+  /// The accessibility text for the details (top) section
+  private var detailsAccessibilityText: String {
+    var components: [String] = []
+    
+    components.append("Pokémon number \(pokemon.number)")
+    components.append(pokemon.displayName)
+    components.append("Weight: \(pokemon.fullWeightDescription)")
+    components.append("Height: \(pokemon.fullHeightDescription)")
+    components.append("Base experience: \(pokemon.baseExperience)")
+   
+    if let type1 = pokemon.type(forSlot: 1) {
+      if let type2 = pokemon.type(forSlot: 2) {
+        components.append("Types: \(type1) and \(type2)")
+      }
+      else {
+        components.append("Type: \(type1)")
+      }
+    }
+    else {
+      if let type2 = pokemon.type(forSlot: 2) {
+        components.append("Type: \(type2)")
+      }
+      else {
+        components.append("No types")
+      }
+    }
+                        
+    return components.joined(separator: ". ")
   }
 
   /// The view hosting the image displayed by this view

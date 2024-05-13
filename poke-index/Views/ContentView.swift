@@ -50,6 +50,8 @@ struct ContentView: View {
           Button(action: refreshAllPokemon) {
             Image(systemName: "arrow.clockwise")
           }
+          .accessibilityElement()
+          .accessibilityLabel(Text("Refresh all Pokémon."))
         }
       }
     } detail: {

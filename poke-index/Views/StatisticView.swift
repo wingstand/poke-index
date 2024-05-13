@@ -35,6 +35,8 @@ struct StatisticView: View {
         .cornerRadius(4)
         .tint(PokemonStatistic.color(forValue: value))
     }
+    .accessibilityElement()
+    .accessibilityLabel("\(statistic.description): \(value)")
   }
 }
 

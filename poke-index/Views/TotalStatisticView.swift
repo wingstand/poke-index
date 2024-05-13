@@ -24,6 +24,8 @@ struct TotalStatisticView: View {
         .font(.body)
         .foregroundColor(.primary)
     }
+    .accessibilityElement()
+    .accessibilityLabel("Total: \(value)")
   }
 }
 
