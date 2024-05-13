@@ -82,7 +82,8 @@ struct PokemonRowView: View {
     }
   }
   
-  /// - Returns: The text component of this row in regular mode. This displays three lines of text.
+  /// - Returns: The text component of this row in regular mode. This displays three lines of text
+  /// (assuming the fonts are small enough),
   private var regularTextView: some View {
     VStack(alignment: .leading, spacing: 1) {
       // We use clear text if we don't have information to keep the height

@@ -10,13 +10,8 @@ import SwiftUI
 struct StatisticView: View {
   @Environment(\.managedObjectContext) private var viewContext
 
-  @State private var animatedValue: Int16 = 0
-  @State private var timer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
-
   @ObservedObject var pokemon: Pokemon
   let statistic: PokemonStatistic
-  
-  @State var ticks: Int = 0
   
   var body: some View {
     let value = pokemon.value(forStatistic: statistic)
@@ -29,29 +24,16 @@ struct StatisticView: View {
         
         Spacer()
         
-        Text(animatedValue.description)
+        Text(value.description)
           .font(.body)
           .foregroundColor(.secondary)
       }
       
-      ProgressView(value: Float(animatedValue) / 255.0)
+      ProgressView(value: Double(value), total: 255)
         .progressViewStyle(.linear)
         .padding(.vertical, 0)
         .cornerRadius(4)
-        .tint(PokemonStatistic.color(forValue: animatedValue))
-    }
-    .onReceive(timer) {
-      input in
-      
-      ticks += 1
-      
-      if value > 0 {
-        animatedValue = min(value, animatedValue + 3)
-        
-        if animatedValue == value {
-          self.timer.upstream.connect().cancel()
-        }
-      }
+        .tint(PokemonStatistic.color(forValue: value))
     }
   }
 }

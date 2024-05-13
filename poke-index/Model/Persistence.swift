@@ -179,8 +179,7 @@ class PersistenceController {
   func startNextDownload(forPokemon pokemon: Pokemon) {
     if pokemon.imageData == nil {
       if pokemon.imageUrl == nil {
-        if pokemon.weight == 0 {
-          // If weight is 0, we haven't tried to download this Pokémon.
+        if !pokemon.hasBeenDownloaded {
           downloadPokemon(pokemon)
         }
       }

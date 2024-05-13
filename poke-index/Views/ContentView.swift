@@ -22,9 +22,10 @@ struct ContentView: View {
   var persistence: PersistenceController = .shared
 
   @State private var searchText = ""
-  
+  @State private var columnVisibility = NavigationSplitViewVisibility.all
+
   var body: some View {
-    NavigationStack {
+    NavigationSplitView(columnVisibility: $columnVisibility) {
       List {
         ForEach(allPokemon) {
           pokemon in
@@ -37,6 +38,9 @@ struct ContentView: View {
         }
       }
       .navigationTitle("Pokémon")
+      .navigationDestination(for: Pokemon.self) {
+        pokemon in PokemonView(pokemon: pokemon)
+      }
       .toolbar {
         ToolbarItem {
           Button(action: refreshAllPokemon) {
@@ -44,7 +48,12 @@ struct ContentView: View {
           }
         }
       }
+    } detail: {
+      Text("No Pokémon")
+        .font(.largeTitle)
+        .foregroundColor(.secondary)
     }
+    .navigationSplitViewStyle(.balanced)
     .searchable(text: $searchText, placement: .automatic, prompt: "Name or Number")
     .onChange(of: searchText) {
       _ in updatePredicate()

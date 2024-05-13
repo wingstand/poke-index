@@ -8,9 +8,6 @@
 import SwiftUI
 
 struct TotalStatisticView: View {
-  @State private var animatedValue: Int16 = 0
-  @State private var timer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common).autoconnect()
-
   @ObservedObject var pokemon: Pokemon
   
   var body: some View {
@@ -23,20 +20,9 @@ struct TotalStatisticView: View {
       
       Spacer()
       
-      Text(animatedValue.description)
+      Text(value.description)
         .font(.body)
         .foregroundColor(.primary)
-    }
-    .onReceive(timer) {
-      input in
-      
-      if value > 0 {
-        animatedValue = min(value, animatedValue + 10)
-        
-        if animatedValue == value {
-          self.timer.upstream.connect().cancel()
-        }
-      }
     }
   }
 }
