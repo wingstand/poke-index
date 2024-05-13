@@ -9,7 +9,7 @@ import Foundation
 
 /// Objects used to parse JSON results from the server.
 struct Result {
-  struct AllPokemon: Decodable {
+  struct Page: Decodable {
     struct Item : Decodable {
       let name: String
       let url: String

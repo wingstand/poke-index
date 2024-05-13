@@ -192,7 +192,7 @@ class PersistenceController {
       }
       
       let data = try Data(contentsOf: localUrl)
-      let result = try JSONDecoder().decode(Result.AllPokemon.self, from: data)
+      let result = try JSONDecoder().decode(Result.Page.self, from: data)
       
       DispatchQueue.main.async {
         self.createPokemon(from: result)
@@ -218,11 +218,11 @@ class PersistenceController {
   
   /// Creates Pokémon objects from a page of Pokémon data. Each result contains only a name and URL; we synthesize a nuber from the URL.
   /// - Parameter result: a page of Pokémon data.
-  private func createPokemon(from result: Result.AllPokemon) {
+  private func createPokemon(from page: Result.Page) {
     do {
       let context = container.viewContext
       
-      for item in result.results {
+      for item in page.results {
         let pokemon = pokemon(forName: item.name) ?? Pokemon(context: context)
         
         pokemon.name = item.name
