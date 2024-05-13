@@ -132,7 +132,7 @@ struct PokemonRowView: View {
       Spacer()
       
       if pokemon.number > 0 {
-        Text(String(format: "%04d", pokemon.number))
+        Text(String(format: "#\(pokemon.number)", pokemon.number))
           .font(.body)
           .foregroundColor(.secondary)
       }
