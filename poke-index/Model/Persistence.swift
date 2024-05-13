@@ -34,6 +34,12 @@ enum PersistenceControllerError: LocalizedError {
 
 /// Controller for  the underlying CoreData store.
 class PersistenceController {
+  /// User-defaults keys
+  private struct Key {
+    static let currentPageUrl = "currentPageUrl"
+    static let haveDownloadedAllPages = "haveDownloadedAllPages"
+  }
+  
   static let shared = PersistenceController()
    
   let container: NSPersistentContainer
@@ -100,6 +106,13 @@ class PersistenceController {
       (try context.fetch(Pokemon.fetchRequest())).forEach({ context.delete($0) })
       
       try context.save()
+      
+      let userDefaults = UserDefaults.standard
+
+      userDefaults.set(false, forKey: Key.haveDownloadedAllPages)
+      userDefaults.removeObject(forKey: Key.currentPageUrl)
+      
+      NSLog("deleted all Pokémon")
     }
     catch {
       NSLog("cannot delete Pokémon: \(error.localizedDescription)")
@@ -109,12 +122,24 @@ class PersistenceController {
   /// Download all the Pokémon from the server
   func downloadAllPokemon() {
     do {
-      // Specify our own limit as the default (20) is a little low and leads to lots of requests.
-      guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=100") else {
-        throw PersistenceControllerError.badUrl
-      }
+      let userDefaults = UserDefaults.standard
       
-      downloadPokemon(from: url)
+      if userDefaults.bool(forKey: Key.haveDownloadedAllPages) {
+        NSLog("have already downloaded all pages of Pokémon")
+      }
+      else if let url = userDefaults.url(forKey: Key.currentPageUrl) {
+        // Pick up from where we left off
+        downloadPokemon(from: url)
+      }
+      else {
+        // Start from scratch, specify our own limit as the default (20) is a little low
+        // and leads to lots of requests.
+        guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=100") else {
+          throw PersistenceControllerError.badUrl
+        }
+ 
+        downloadPokemon(from: url)
+      }
     }
     catch {
       NSLog("cannot download Pokémon: \(error.localizedDescription)")
@@ -127,6 +152,9 @@ class PersistenceController {
     }
     
     pendingUrls.insert(url)
+    UserDefaults.standard.set(url, forKey: Key.currentPageUrl)
+    
+    NSLog("downloading next page of Pokémon from \(url)")
     
     let request = URLRequest(url: url)
     
@@ -150,8 +178,16 @@ class PersistenceController {
         self.createPokemon(from: result)
         self.pendingUrls.remove(url)
 
-        if let nextPageUrl = URL(string: result.next) {
+        if let next = result.next, let nextPageUrl = URL(string: next) {
           self.downloadPokemon(from: nextPageUrl)
+        }
+        else {
+          let userDefaults = UserDefaults.standard
+
+          userDefaults.set(true, forKey: Key.haveDownloadedAllPages)
+          userDefaults.removeObject(forKey: Key.currentPageUrl)
+
+          NSLog("finished loading all pages of Pokémon")
         }
       }
     }

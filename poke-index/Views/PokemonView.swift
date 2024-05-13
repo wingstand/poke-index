@@ -62,8 +62,8 @@ struct PokemonView: View {
       value in
       
       // Constrain the image height to the text height. This is constrainted to a
-      // maximim of 128 since we want to leave room for the text if we're using a
-      // large font.
+      // maximum of 128 piints since we want to leave room for the text if we're
+      // using a large font.
       DispatchQueue.main.async {
         imageHeight = min(128, value)
       }
