@@ -39,13 +39,10 @@ struct PokemonView: View {
         HStack(alignment: .center, spacing: 10) {
           imageView
           
-          textView
-            .background(
-              // Whenever the height of the text view changes, we stash it in the preferences
-              GeometryReader {
-                proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
-              }
-            )
+          ZStack {
+            imageGuideView
+            textView
+          }
         }
       }
       
@@ -60,7 +57,7 @@ struct PokemonView: View {
         TotalStatisticView(pokemon: pokemon)
       }
     }
-    .navigationTitle(pokemon.name?.capitalized ?? "Pokémon")
+    .navigationTitle(pokemon.displayName)
     .onPreferenceChange(TextHeightKey.self) {
       value in
       
@@ -73,11 +70,30 @@ struct PokemonView: View {
     }
   }
   
+  /// A view that isn't displayed but is used as a guide for the image's height
+  private var imageGuideView: some View {
+    VStack {
+      Text("1")
+      Text("2")
+      Text("3")
+      Text("4")
+    }
+    .font(.body)
+    .foregroundColor(.clear)
+    .background(
+      // Whenever the height of the text view changes, we stash it in the preferences
+      GeometryReader {
+        proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
+      }
+    )
+  }
+  
+  /// A view hosting the text displayed at the top of this view.
   private var textView: some View {
     VStack(alignment: .leading, spacing: 3) {
       if horizontalSizeClass == .compact && verticalSizeClass == .compact {
           HStack {
-            Text("#\(pokemon.number)")
+            Text("#\(pokemon.number) \(pokemon.displayName)")
               .font(.headline)
               .foregroundColor(.primary)
             
@@ -95,7 +111,7 @@ struct PokemonView: View {
         }
       }
       else {
-        Text("#\(pokemon.number)")
+        Text("#\(pokemon.number) \(pokemon.displayName)")
           .font(.headline)
           .foregroundColor(.primary)
         
@@ -115,6 +131,7 @@ struct PokemonView: View {
     }
   }
 
+  /// The view hosting the image displayed by this view
   private var imageView: some View {
     Group {
       if let image = self.image {
@@ -130,6 +147,8 @@ struct PokemonView: View {
     .frame(width: imageHeight, height: imageHeight, alignment: .center)
   }
   
+  /// The image displayed by this view. If no image data or URL is defined in the associated Pokémon,
+  /// a dowbload is triggered.
   private var image: Image? {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
@@ -157,7 +176,7 @@ struct PokemonView_Previews: PreviewProvider {
   
   static var previews: some View {
     let persistence = PersistenceController.preview
-    let pokemon = persistence.pokemon(forName: "clefairy")!
+    let pokemon = persistence.pokemon(forNumber: 10118)!
     
     Container(persistence: persistence, pokemon: pokemon)
   }
