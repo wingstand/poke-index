@@ -31,6 +31,11 @@ extension Pokemon {
     return order != 0
   }
   
+  /// The name to use when displaying this Pokémon
+  var displayName: String {
+    return name?.replacingOccurrences(of: "-", with: " ").capitalized ?? "Anonymous"
+  }
+    
   private static var measurementFormatter: MeasurementFormatter = {
     let numberFormatter = NumberFormatter()
     

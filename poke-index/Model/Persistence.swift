@@ -81,6 +81,21 @@ class PersistenceController {
       return nil
     }
   }
+ 
+  func pokemon(forNumber number: Int16) -> Pokemon? {
+    let request = Pokemon.fetchRequest()
+    
+    request.predicate = NSPredicate(format: "number = %i", number)
+    
+    do {
+      return try container.viewContext.fetch(request).first
+    }
+    catch {
+      NSLog("cannot search Pokémon with name \(number): \(error.localizedDescription)")
+      
+      return nil
+    }
+  }
   
   // MARK: - loading all Pokémon
   
@@ -372,20 +387,21 @@ class PersistenceController {
     let result = PersistenceController(inMemory: true)
     let viewContext = result.container.viewContext
     
-    //result.createPokemon(from: clefairy)
+    result.createPokemon(from: clefairy)
+    result.createPokemon(from: zygarde10PowerConstruct)
     
-    let pokemon = Pokemon(context: viewContext)
-
-    pokemon.number = 35
-    pokemon.url = URL(string: "https://pokeapi.co/api/v2/pokemon/35/")
-    pokemon.name = "clefairy"
-
-    do {
-      try viewContext.save()
-    }
-    catch {
-      NSLog("cannot save: \(error.localizedDescription)")
-    }
+//    let pokemon = Pokemon(context: viewContext)
+//
+//    pokemon.number = 35
+//    pokemon.url = URL(string: "https://pokeapi.co/api/v2/pokemon/35/")
+//    pokemon.name = "clefairy"
+//
+//    do {
+//      try viewContext.save()
+//    }
+//    catch {
+//      NSLog("cannot save: \(error.localizedDescription)")
+//    }
     
     return result
   }()
@@ -398,6 +414,30 @@ class PersistenceController {
                    height: 6,
                    weight: 75,
                    base_experience: 113,
+                   order: 64,
+                   stats: [
+                    .init(base_stat: 70, effort: 2, stat: .init(name: "hp")),
+                    .init(base_stat: 45, effort: 9, stat: .init(name: "attack")),
+                    .init(base_stat: 190, effort: 0, stat: .init(name: "special-attack")),
+                    .init(base_stat: 65, effort: 0, stat: .init(name: "special-defense")),
+                    .init(base_stat: 148, effort: 0, stat: .init(name: "defense")),
+                    .init(base_stat: 35, effort: 2, stat: .init(name: "speed"))
+                   ],
+                   types: [
+                    .init(slot: 1, type: .init(name: "fairy")),
+                    .init(slot: 2, type: .init(name: "poison"))
+                   ])
+    
+  }
+  
+  private static var zygarde10PowerConstruct: Result.Pokemon {
+    Result.Pokemon(id: 10118,
+                   name: "zygarde-10-power-construct",
+                   sprites: .init(front_default: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10118.png",
+                                  front_shiny: nil),
+                   height: 12,
+                   weight: 335,
+                   base_experience: 243,
                    order: 64,
                    stats: [
                     .init(base_stat: 70, effort: 2, stat: .init(name: "hp")),

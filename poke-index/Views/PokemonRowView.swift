@@ -38,25 +38,12 @@ struct PokemonRowView: View {
   
   var body: some View {
     HStack(alignment: .center, spacing: 10) {
-      Group {
-        if let image {
-          image
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-        }
-        else {
-          ProgressView()
-        }
+      imageView
+
+      ZStack {
+        imageGuideView
+        textView
       }
-      .frame(width: imageHeight, height: imageHeight, alignment: .center)
-      
-      textView
-        .background(
-          // Whenever the height of the text view changes, we stash it in the preferences
-          GeometryReader {
-            proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
-          }
-        )
     }
     .onPreferenceChange(TextHeightKey.self) {
       value in
@@ -86,29 +73,13 @@ struct PokemonRowView: View {
   /// (assuming the fonts are small enough),
   private var regularTextView: some View {
     VStack(alignment: .leading, spacing: 1) {
-      // We use clear text if we don't have information to keep the height
-      // consistent and not distract the user with unnecessary info
+      Text(pokemon.displayName)
+        .font(.headline)
+        .foregroundColor(.primary)
       
-      if let name = pokemon.name {
-        Text(name.capitalized)
-          .font(.headline)
-      }
-      else {
-        Text("Anonymous")
-          .font(.headline)
-          .foregroundColor(.clear)
-      }
-      
-      if pokemon.number > 0 {
-        Text("#\(pokemon.number)")
-          .font(.body)
-          .foregroundColor(.secondary)
-      }
-      else {
-        Text("#0")
-          .font(.body)
-          .foregroundColor(.clear)
-      }
+      Text("#\(pokemon.number)")
+        .font(.body)
+        .foregroundColor(.secondary)
       
       if pokemon.weight > 0 && pokemon.height > 0 {
         Text("\(pokemon.weightDescription), \(pokemon.heightDescription)")
@@ -118,16 +89,55 @@ struct PokemonRowView: View {
       else {
         Text("Unknown weight and height")
           .font(.callout)
-          .foregroundColor(.clear)
+          .foregroundColor(.secondary)
       }
     }
+  }
+  
+  /// A view that isn't displayed but is used as a guide for the image's height. It uses one line in compact
+  /// mode and three lines otherwise.
+  private var imageGuideView: some View {
+    VStack {
+      if horizontalSizeClass == .compact && verticalSizeClass == .compact {
+        Text("1")
+      }
+      else {
+        Text("1")
+        Text("2")
+        Text("3")
+      }
+    }
+    .font(.body)
+    .foregroundColor(.clear)
+    .background(
+      // Whenever the height of the text view changes, we stash it in the preferences
+      GeometryReader {
+        proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
+      }
+    )
+  }
+  
+  /// The view hosting the image displayed by this view
+  private var imageView: some View {
+    Group {
+      if let image = self.image {
+        image
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .clipped()
+      }
+      else {
+        ProgressView()
+      }
+    }
+    .frame(width: imageHeight, height: imageHeight, alignment: .center)
   }
   
   /// - Returns: The text component of this row in compact mode. This displays only one
   /// line of text, so we can fit more rows onto the screen.
   private var compactTextView: some View {
     HStack(alignment: .center, spacing: 1) {
-      Text(pokemon.name?.capitalized ?? "Anonymous")
+      Text(pokemon.displayName)
         .font(.headline)
       
       Spacer()
@@ -140,7 +150,8 @@ struct PokemonRowView: View {
     }
   }
   
-  /// - Returns: The image component of this row.
+  /// The image displayed by this view. If no image data or URL is defined in the associated Pokémon,
+  /// a dowbload is triggered.
   private var image: Image? {
     if let imageData = pokemon.imageData, let uiImage = UIImage(data: imageData) {
       return Image(uiImage: uiImage)
@@ -156,7 +167,7 @@ struct PokemonRowView: View {
 struct PokemonRowView_Previews: PreviewProvider {
   static var previews: some View {
     let persistence = PersistenceController.preview
-    let pokemon = persistence.pokemon(forName: "clefairy")!
+    let pokemon = persistence.pokemon(forNumber: 10118)!
     
     PokemonRowView(persistence: persistence, pokemon: pokemon)
       .environment(\.managedObjectContext, persistence.container.viewContext)
