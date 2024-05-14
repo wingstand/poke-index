@@ -28,7 +28,7 @@ extension PokemonStatistic.Kind: CustomStringConvertible {
 }
 
 extension PokemonStatistic {
-  /// Returns the color to use for a particlar statistic value.
+  /// Returns the color to use for a particular statistic value.
   /// - Parameter value: the value of the statistic.
   /// - Returns: the color to use for `value`.
   static func color(forValue value: Int) -> Color {
@@ -55,6 +55,7 @@ extension PokemonStatistic {
     }
   }
   
+  /// The color to use for this statistic.
   var color: Color {
     return Self.color(forValue: value)
   }

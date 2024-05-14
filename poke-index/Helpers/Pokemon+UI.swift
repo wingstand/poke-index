@@ -9,12 +9,6 @@ import Foundation
 
 /// Helper methods for displaying Pokémon attributes in the UI
 extension Pokemon {
-  /// Whether this Pokémon has been downloaded
-  var hasBeenDownloaded: Bool {
-    // If we've set the order to a non-zero value, we must have pulled the data from the server.
-    return order != 0
-  }
-  
   /// The name to use when displaying this Pokémon
   var displayName: String {
     return name.replacingOccurrences(of: "-", with: " ").capitalized

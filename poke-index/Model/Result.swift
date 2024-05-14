@@ -51,7 +51,6 @@ struct Result {
     let height: Int
     let weight: Int
     let base_experience: Int
-    let order: Int
     let stats: [Statistic]
     let types: [Kind]
   }

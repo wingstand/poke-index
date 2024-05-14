@@ -239,7 +239,6 @@ class DataController {
     pokemon.number = result.id
     pokemon.height = result.height
     pokemon.weight = result.weight
-    pokemon.order = result.order
     pokemon.baseExperience = result.base_experience
     
     result.stats.forEach {
@@ -325,7 +324,6 @@ extension DataController {
                    height: 6,
                    weight: 75,
                    base_experience: 113,
-                   order: 64,
                    stats: [
                     .init(base_stat: 70, effort: 2, stat: .init(name: "hp")),
                     .init(base_stat: 45, effort: 9, stat: .init(name: "attack")),
@@ -350,7 +348,6 @@ extension DataController {
                    height: 12,
                    weight: 335,
                    base_experience: 243,
-                   order: 64,
                    stats: [
                     .init(base_stat: 70, effort: 2, stat: .init(name: "hp")),
                     .init(base_stat: 45, effort: 9, stat: .init(name: "attack")),
