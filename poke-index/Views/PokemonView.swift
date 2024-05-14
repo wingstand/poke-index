@@ -8,15 +8,11 @@
 import SwiftUI
 
 struct PokemonView: View {
-  /// Preference key used to track the height of text component of this view, which
-  /// we use to constrain the image height
-  private struct TextHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+  /// The height of the image in compact view. This is scaled according to the dynamic type settings
+  @ScaledMetric var compactImageHeight: CGFloat = 40
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-      value = max(value, nextValue())
-    }
-  }
+  /// The height of the image in regular view. This is scaled according to the dynamic type settings
+  @ScaledMetric var regularImageHeight: CGFloat = 80
 
   @Environment(\.managedObjectContext) private var viewContext
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -30,20 +26,13 @@ struct PokemonView: View {
   /// The Pokémon this view displays.
   @ObservedObject var pokemon: Pokemon
   
-  /// The height of the image displayed by this view.
-  @State private var imageHeight: CGFloat = 0
-
   /// The body for this view
   var body: some View {
     List {
       Section {
         HStack(alignment: .center, spacing: 10) {
           imageView
-          
-          ZStack {
-            imageGuideView
-            textView
-          }
+          textView
         }
         .accessibilityElement()
         .accessibilityLabel(detailsAccessibilityText)
@@ -61,34 +50,6 @@ struct PokemonView: View {
       }
     }
     .navigationTitle(pokemon.displayName)
-    .onPreferenceChange(TextHeightKey.self) {
-      value in
-      
-      // Constrain the image height to the text height. This is constrainted to a
-      // maximum of 128 points since we want to leave room for the text if we're
-      // using a large font.
-      DispatchQueue.main.async {
-        imageHeight = min(128, value)
-      }
-    }
-  }
-  
-  /// A view that isn't displayed but is used as a guide for the image's height
-  private var imageGuideView: some View {
-    VStack {
-      Text("1")
-      Text("2")
-      Text("3")
-      Text("4")
-    }
-    .font(.body)
-    .foregroundColor(.clear)
-    .background(
-      // Whenever the height of the text view changes, we stash it in the preferences
-      GeometryReader {
-        proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
-      }
-    )
   }
   
   /// A view hosting the text displayed at the top of this view.
@@ -178,6 +139,11 @@ struct PokemonView: View {
       }
     }
     .frame(width: imageHeight, height: imageHeight, alignment: .center)
+  }
+  
+  /// The height of the image, which is dependent on whether we're compact or not.
+  private var imageHeight: CGFloat {
+    return horizontalSizeClass == .compact && verticalSizeClass == .compact ? compactImageHeight : regularImageHeight
   }
   
   /// The image displayed by this view. If no image data or URL is defined in the associated Pokémon,

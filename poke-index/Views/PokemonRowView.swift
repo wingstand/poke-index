@@ -11,20 +11,16 @@ import SwiftUI
 /// whether we are in compact mode (i.e., landscape mode on an iPhone) or regular
 /// (everything else).
 struct PokemonRowView: View {
-  /// Preference key used to track the height of text component of this row, which
-  /// we use to constrain the image height
-  private struct TextHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
+  /// The height of the image in compact view. This is scaled according to the dynamic type settings
+  @ScaledMetric var compactImageHeight: CGFloat = 32
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-      value = max(value, nextValue())
-    }
-  }
+  /// The height of the image in regular view. This is scaled according to the dynamic type settings
+  @ScaledMetric var regularImageHeight: CGFloat = 64
   
   @Environment(\.managedObjectContext) private var viewContext
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.verticalSizeClass) private var verticalSizeClass
-  
+
   /// The persistence controller, which controls access to the Core Data
   /// store. Uses the shared one by default, but previews set it to the
   /// preview controller
@@ -33,27 +29,10 @@ struct PokemonRowView: View {
   /// The Pokémon this row displays.
   @ObservedObject var pokemon: Pokemon
   
-  /// The height of the image displayed by this row.
-  @State private var imageHeight: CGFloat = 0
-  
   var body: some View {
     HStack(alignment: .center, spacing: 10) {
       imageView
-
-      ZStack {
-        imageGuideView
         textView
-      }
-    }
-    .onPreferenceChange(TextHeightKey.self) {
-      value in
-      
-      // Constrain the image height to the text height. This is constrainted to a
-      // maximum of 128 points since we want to leave room for the text if we're using a
-      // large font.
-      DispatchQueue.main.async {
-        imageHeight = min(128, value)
-      }
     }
     .accessibilityElement()
     .accessibility(label: Text("Pokémon number \(pokemon.number). \(pokemon.displayName)."))
@@ -96,29 +75,6 @@ struct PokemonRowView: View {
     }
   }
   
-  /// A view that isn't displayed but is used as a guide for the image's height. It uses one line in compact
-  /// mode and three lines otherwise.
-  private var imageGuideView: some View {
-    VStack {
-      if horizontalSizeClass == .compact && verticalSizeClass == .compact {
-        Text("1")
-      }
-      else {
-        Text("1")
-        Text("2")
-        Text("3")
-      }
-    }
-    .font(.body)
-    .foregroundColor(.clear)
-    .background(
-      // Whenever the height of the text view changes, we stash it in the preferences
-      GeometryReader {
-        proxy in Color.clear.preference(key: TextHeightKey.self, value: proxy.size.height)
-      }
-    )
-  }
-  
   /// The view hosting the image displayed by this view
   private var imageView: some View {
     Group {
@@ -132,12 +88,12 @@ struct PokemonRowView: View {
         ProgressView()
       }
     }
-    .frame(width: fixedImageHeight, height: fixedImageHeight, alignment: .center)
-    //.frame(width: imageHeight, height: imageHeight, alignment: .center)
+    .frame(width: imageHeight, height: imageHeight, alignment: .center)
   }
-    
-  private var fixedImageHeight: CGFloat {
-    return horizontalSizeClass == .compact && verticalSizeClass == .compact ? 32 : 64
+   
+  /// The height of the image, which is dependent on whether we're compact or not.
+  private var imageHeight: CGFloat {
+    return horizontalSizeClass == .compact && verticalSizeClass == .compact ? compactImageHeight : regularImageHeight
   }
   
   /// - Returns: The text component of this row in compact mode. This displays only one
