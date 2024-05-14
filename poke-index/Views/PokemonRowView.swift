@@ -132,7 +132,12 @@ struct PokemonRowView: View {
         ProgressView()
       }
     }
-    .frame(width: imageHeight, height: imageHeight, alignment: .center)
+    .frame(width: fixedImageHeight, height: fixedImageHeight, alignment: .center)
+    //.frame(width: imageHeight, height: imageHeight, alignment: .center)
+  }
+    
+  private var fixedImageHeight: CGFloat {
+    return horizontalSizeClass == .compact && verticalSizeClass == .compact ? 32 : 64
   }
   
   /// - Returns: The text component of this row in compact mode. This displays only one

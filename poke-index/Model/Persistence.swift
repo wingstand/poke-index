@@ -395,6 +395,8 @@ class PersistenceController {
         throw PersistenceControllerError.noData
       }
       
+      NSLog("finished download of \(url)")
+        
       let data = try Data(contentsOf: localUrl)
       
       DispatchQueue.main.async {
