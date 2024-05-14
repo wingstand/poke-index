@@ -131,79 +131,57 @@ class PersistenceController {
   /// Starts or resumes downloading all Pokémon from the server. If all Pokémon are on the
   /// device, no download is made.
   func downloadAllPokemon() {
-    do {
-      let userDefaults = UserDefaults.standard
+    downloadNextPage()
+  }
+  
+  /// Starts or resumes downloading the next page of Pokémon from the server. If all Pokémon are on the
+  /// device, no download is made.
+  private func downloadNextPage() {
+    let userDefaults = UserDefaults.standard
+  
+    guard !userDefaults.bool(forKey: Key.haveDownloadedAllPages) else {
+      NSLog("have already downloaded all pages of Pokémon")
       
-      if userDefaults.bool(forKey: Key.haveDownloadedAllPages) {
-        NSLog("have already downloaded all pages of Pokémon")
-      }
-      else if let url = userDefaults.url(forKey: Key.currentPageUrl) {
-        // Pick up from where we left off
-        downloadPokemon(from: url)
-      }
-      else {
-        // Start from scratch, specify our own limit as the default (20) is a little low
-        // and leads to lots of requests.
-        guard let url = URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=100") else {
-          throw PersistenceControllerError.badUrl
-        }
-        
-        downloadPokemon(from: url)
-      }
+      return
     }
-    catch {
-      NSLog("cannot download Pokémon: \(error.localizedDescription)")
+    
+    guard let url = userDefaults.url(forKey: Key.currentPageUrl) ?? URL(string: "https://pokeapi.co/api/v2/pokemon/?offset=0&limit=100") else {
+      NSLog("can't get URL for next page")
+
+      return
+    }
+    
+    Task.init {
+      await downloadPokemon(from: url)
     }
   }
   
   /// Downloads a page of Pokémon from the server.
   /// - Parameter url: the URL used to request the page.
-  private func downloadPokemon(from url: URL) {
+  private func downloadPokemon(from url: URL) async {
     guard !pendingUrls.contains(url) else {
       return
     }
     
     pendingUrls.insert(url)
-    UserDefaults.standard.set(url, forKey: Key.currentPageUrl)
     
     NSLog("downloading next page of Pokémon from \(url)")
     
-    let request = URLRequest(url: url)
-    
-    let task = URLSession.shared.downloadTask(with: request) {
-      _, response, error in self.didDownloadPokemon(from: url, response: response, error: error)
-    }
-    
-    task.resume()
-  }
-  
-  /// Callback function called when a page of Pokémon have been downloaded.
-  /// - Parameter url: the URL the page was downloaded from.
-  /// - Parameter response: the server's response, `nil` if there was no response.
-  /// - Parameter error: any error generated during the download process, `nil` if no error.
-  private func didDownloadPokemon(from url: URL, response: URLResponse?, error: Error?) {
     do {
-      if let error {
-        throw error
-      }
-      
-      guard let localUrl = response?.url else {
-        throw PersistenceControllerError.noData
-      }
-      
-      let data = try Data(contentsOf: localUrl)
+      let (data, _) = try await URLSession.shared.data(from: url)
       let result = try JSONDecoder().decode(Result.Page.self, from: data)
       
       DispatchQueue.main.async {
+        let userDefaults = UserDefaults.standard
+        
         self.createPokemon(from: result)
         self.pendingUrls.remove(url)
         
         if let next = result.next, let nextPageUrl = URL(string: next) {
-          self.downloadPokemon(from: nextPageUrl)
+          userDefaults.set(nextPageUrl, forKey: Key.currentPageUrl)
+          self.downloadNextPage()
         }
         else {
-          let userDefaults = UserDefaults.standard
-          
           userDefaults.set(true, forKey: Key.haveDownloadedAllPages)
           userDefaults.removeObject(forKey: Key.currentPageUrl)
           
@@ -212,7 +190,7 @@ class PersistenceController {
       }
     }
     catch {
-      NSLog("failed to download Pokémon: \(error.localizedDescription)")
+      NSLog("cannot download page of Pokémon: \(error.localizedDescription)")
     }
   }
   
@@ -257,18 +235,22 @@ class PersistenceController {
     if pokemon.imageData == nil {
       if pokemon.imageUrl == nil {
         if !pokemon.hasBeenDownloaded {
-          downloadPokemon(pokemon)
+          Task.init {
+            await self.downloadPokemon(pokemon)
+          }
         }
       }
       else {
-        downloadImage(forPokemon: pokemon)
+        Task.init {
+          await self.downloadImage(forPokemon: pokemon)
+        }
       }
     }
   }
   
   /// Start downloading the details for a Pokémon.
   /// - Parameter pokemon: the Pokémon whose details we need to dowload.
-  private func downloadPokemon(_ pokemon: Pokemon) {
+  private func downloadPokemon(_ pokemon: Pokemon) async {
     guard let url = pokemon.url, !pendingUrls.contains(url) else {
       return
     }
@@ -277,39 +259,15 @@ class PersistenceController {
     
     NSLog("starting download of \(url)")
     
-    let request = URLRequest(url: url)
-    
-    let task = URLSession.shared.downloadTask(with: request) {
-      _, response, error in self.didDownLoadPokemon(pokemon, from: url, response: response, error: error)
-    }
-    
-    task.resume()
-  }
-  
-  /// Callback function called when a Pokémon has been downloaded.
-  /// - Parameter pokemon: the Pokémon whose details we're downloading.
-  /// - Parameter url: the URL the details were downloaded from.
-  /// - Parameter response: the server's response, `nil` if there was no response.
-  /// - Parameter error: any error generated during the download process, `nil` if no error.
-  private func didDownLoadPokemon(_ pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
     do {
-      if let error {
-        throw error
-      }
-      
-      guard let localUrl = response?.url else {
-        throw PersistenceControllerError.noData
-      }
-      
-      let data = try Data(contentsOf: localUrl)
+      let (data, _) = try await URLSession.shared.data(from: url)
       let result = try JSONDecoder().decode(Result.Pokemon.self, from: data)
-      
+   
       DispatchQueue.main.async {
         self.updatePokemon(pokemon, from: result)
-        
-        NSLog("finished download of \(url)")
-        
         self.pendingUrls.remove(url)
+
+        NSLog("finished download of \(url)")
       }
     }
     catch {
@@ -366,7 +324,7 @@ class PersistenceController {
   
   /// Start downloading the image data for a Pokémon.
   /// - Parameter pokemon: the Pokémon whose image data we need.
-  private func downloadImage(forPokemon pokemon: Pokemon) {
+  private func downloadImage(forPokemon pokemon: Pokemon) async {
     guard let url = pokemon.imageUrl, !pendingUrls.contains(url) else {
       return
     }
@@ -374,45 +332,32 @@ class PersistenceController {
     pendingUrls.insert(url)
     
     NSLog("starting download of \(url)")
-    
-    let request = URLRequest(url: url)
-    
-    let task = URLSession.shared.downloadTask(with: request) {
-      _, response, error in self.didDownLoadImage(for: pokemon, from: url, response: response, error: error)
-    }
-    
-    task.resume()
-  }
-  
-  /// Callback function called when the image data for a Pokémon has been downloaded.
-  /// - Parameter pokemon: the Pokémon whose image we're downloading.
-  /// - Parameter url: the URL the image data was downloaded from.
-  /// - Parameter response: the server's response, `nil` if there was no response.
-  /// - Parameter error: any error generated during the download process, `nil` if no error.
-  private func didDownLoadImage(for pokemon: Pokemon, from url: URL, response: URLResponse?, error: Error?) {
+
     do {
-      guard let localUrl = response?.url else {
-        throw PersistenceControllerError.noData
-      }
-      
-      NSLog("finished download of \(url)")
-        
-      let data = try Data(contentsOf: localUrl)
+      let (data, _) = try await URLSession.shared.data(from: url)
       
       DispatchQueue.main.async {
-        pokemon.imageData = data
-        
-        do {
-          let context = self.container.viewContext
-          
-          try context.save()
-        }
-        catch {
-          NSLog("cannot save image for Pokémon: \(error.localizedDescription)")
-        }
-        
+        self.setImageData(data, forPokemon: pokemon)
         self.pendingUrls.remove(url)
+        
+        NSLog("finished download of \(url)")
       }
+    }
+    catch {
+      NSLog("cannot download image for Pokémon: \(error.localizedDescription)")
+    }
+  }
+  
+  /// Sets the image data for a Pokémon.
+  /// - Parameter data: the image data.
+  /// - Parameter pokemon: the Pokémon to update.
+  private func setImageData(_ data: Data, forPokemon pokemon: Pokemon) {
+    pokemon.imageData = data
+    
+    let context = self.container.viewContext
+    
+    do {
+      try context.save()
     }
     catch {
       NSLog("cannot save image for Pokémon: \(error.localizedDescription)")
