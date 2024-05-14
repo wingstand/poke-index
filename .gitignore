@@ -1,0 +1,8 @@
+Pods/
+Podfile.lock
+*~
+IDEFindNavigatorScopes.plist
+poke-index.xcodeproj/xcuserdata/
+poke-index.xcodeproj/xcshareddata/
+poke-index.xcworkspace/xcuserdata/
+poke-index.xcodeproj/project.xcworkspace/xcuserdata/
