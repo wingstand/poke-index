@@ -8,12 +8,10 @@
 import SwiftUI
 import SwiftData
 
+/// The main content view.
 struct ContentView: View {
   @Environment(\.modelContext) private var modelContext
 
-  /// The query use to fetch the Pokémon
-  @Query( sort: \Pokemon.number, order: .forward) var allPokemon: [Pokemon]
-  
   /// The controller used for downloading data from the server. Defaults to shared
   /// but previews have their own in-memory versions
   var controller: DataController = .shared
@@ -29,24 +27,12 @@ struct ContentView: View {
   /// The visibility of the columns of our split view. By default, we show all (well, both.
   @State private var columnVisibility = NavigationSplitViewVisibility.all
 
+  @State private var filteredPokemon: [Pokemon] = []
+  
   /// The body of this view.
   var body: some View {
     NavigationSplitView(columnVisibility: $columnVisibility) {
-      List {
-        ForEach(filteredPokemon) {
-          pokemon in
-          
-          NavigationLink {
-            PokemonView(pokemon: pokemon)
-          } label: {
-            PokemonRowView(pokemon: pokemon)
-          }
-        }
-      }
-      .navigationTitle("Pokémon")
-      .navigationDestination(for: Pokemon.self) {
-        pokemon in PokemonView(pokemon: pokemon)
-      }
+      PokemonListView(searchText: searchText)
       .toolbar {
         ToolbarItem {
           Button(action: refreshAllPokemon) {
@@ -65,24 +51,6 @@ struct ContentView: View {
     .searchable(text: $searchText, placement: .automatic, prompt: "Name or Number")
     .onAppear {
       initializeAllPokemon()
-    }
-  }
-  
-  /// The Pokémon to show according to the filter. SwiftData doesn't allow dynamic predicates
-  /// at present, hence we use an intermediate array.
-  private var filteredPokemon: [Pokemon] {
-    if searchText.isEmpty {
-      return allPokemon
-    }
-    else {
-      return allPokemon.filter {
-        if let number = Int16(searchText) {
-          return $0.number == number || $0.name.localizedCaseInsensitiveContains(searchText)
-        }
-        else {
-          return $0.name.localizedStandardContains(searchText)
-        }
-      }
     }
   }
   

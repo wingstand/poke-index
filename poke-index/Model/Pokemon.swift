@@ -27,5 +27,10 @@ final class Pokemon: ObservableObject {
     self.name = name
     self.url = url
   }
+  
+  /// The total value of all statistics for this Pokémon.
+  var totalStatistic: Int {
+    return statistics.reduce(0, { $0 + $1.value })
+  }
 }
 
