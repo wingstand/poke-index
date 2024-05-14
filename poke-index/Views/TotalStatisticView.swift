@@ -9,13 +9,10 @@ import SwiftUI
 
 /// A view for displaying the total statistics for a Pokémon.
 struct TotalStatisticView: View {
-  /// The Pokémon for which to display the statisic.
-  @ObservedObject var pokemon: Pokemon
+  let total: Int
   
   /// The body for this view.
   var body: some View {
-    let value = pokemon.totalStatistic
-
     HStack {
       Text("Total")
         .font(.headline)
@@ -23,36 +20,18 @@ struct TotalStatisticView: View {
       
       Spacer()
       
-      Text(value.description)
+      Text(total.description)
         .font(.body)
         .foregroundColor(.primary)
     }
     .accessibilityElement()
-    .accessibilityLabel("Total: \(value)")
+    .accessibilityLabel("Total: \(total)")
   }
 }
 
 // MARK: - previews
 
-struct TotalStatisticView_Previews: PreviewProvider {
-  struct Container: View {
-    var persistence: PersistenceController
-    
-    var body: some View {
-      TotalStatisticView(pokemon: pokemon)
-        .environment(\.managedObjectContext, persistence.container.viewContext)
-    }
-    
-    var pokemon: Pokemon {
-      let pokemon = persistence.pokemon(forName: "clefairy")!
-      
-      persistence.startNextDownload(forPokemon: pokemon)
-      
-      return pokemon
-    }
-  }
-  
-  static var previews: some View {
-    Container(persistence: PersistenceController.preview)
-  }
+#Preview {
+  return TotalStatisticView(total: 99)
 }
+

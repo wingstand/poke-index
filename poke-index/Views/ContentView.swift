@@ -6,22 +6,18 @@
 //
 
 import SwiftUI
-import CoreData
+import SwiftData
 
 struct ContentView: View {
-  @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.modelContext) private var modelContext
 
-  /// The fetch request used to obtain Pokémon from the database.
-  @FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \Pokemon.number, ascending: true),
-                                  NSSortDescriptor(keyPath: \Pokemon.name, ascending: true)],
-                animation: .default)
-  private var allPokemon: FetchedResults<Pokemon>
+  /// The query use to fetch the Pokémon
+  @Query( sort: \Pokemon.number, order: .forward) var allPokemon: [Pokemon]
   
-  /// The persistence controller, which controls access to the Core Data
-  /// store. Uses the shared one by default, but previews set it to the
-  /// preview controller
-  var persistence: PersistenceController = .shared
-
+  /// The controller used for downloading data from the server. Defaults to shared
+  /// but previews have their own in-memory versions
+  var controller: DataController = .shared
+ 
   /// Whether the Pokémon are automatically downloaded. We don't want
   /// to do this if we're previewing
   var shouldAutomaticallyDownloadAllPokemon = true
@@ -37,7 +33,7 @@ struct ContentView: View {
   var body: some View {
     NavigationSplitView(columnVisibility: $columnVisibility) {
       List {
-        ForEach(allPokemon) {
+        ForEach(filteredPokemon) {
           pokemon in
           
           NavigationLink {
@@ -67,30 +63,25 @@ struct ContentView: View {
     }
     .navigationSplitViewStyle(.balanced)
     .searchable(text: $searchText, placement: .automatic, prompt: "Name or Number")
-    .onChange(of: searchText) {
-      _ in updatePredicate()
-    }
     .onAppear {
       initializeAllPokemon()
-      updatePredicate()
     }
   }
   
-  /// Updates the predicate used to control which Pokémon we display. If the search text
-  /// is non-empty, we  apply that; otherwise, we show all the Pokémon.
-  private func updatePredicate() {
+  /// The Pokémon to show according to the filter. SwiftData doesn't allow dynamic predicates
+  /// at present, hence we use an intermediate array.
+  private var filteredPokemon: [Pokemon] {
     if searchText.isEmpty {
-      allPokemon.nsPredicate = NSPredicate(value: true)
+      return allPokemon
     }
     else {
-      if let number = Int16(searchText) {
-        allPokemon.nsPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
-          NSPredicate(format: "name CONTAINS[c] %@", searchText),
-          NSPredicate(format: "number == %i", number)
-        ])
-      }
-      else {
-        allPokemon.nsPredicate = NSPredicate(format: "name CONTAINS[c] %@", searchText)
+      return allPokemon.filter {
+        if let number = Int16(searchText) {
+          return $0.number == number || $0.name.localizedCaseInsensitiveContains(searchText)
+        }
+        else {
+          return $0.name.localizedStandardContains(searchText)
+        }
       }
     }
   }
@@ -99,24 +90,23 @@ struct ContentView: View {
   /// done if we're previewing.
   private func initializeAllPokemon() {
     if shouldAutomaticallyDownloadAllPokemon {
-      persistence.downloadAllPokemon()
+      controller.downloadAllPokemon()
     }
   }
   
   /// Deletes all Pokémon in the store and starts downloading them again.
-  private func refreshAllPokemon() {
-    persistence.deleteAllPokemon()
-    persistence.downloadAllPokemon()
+  @MainActor private func refreshAllPokemon() {
+    controller.deleteAllPokemon()
+    controller.downloadAllPokemon()
   }
 }
 
 // MARK: - previews
 
-struct ContentView_Previews: PreviewProvider {
-  static var previews: some View {
-    let persistence = PersistenceController.preview
-    
-    ContentView(persistence: persistence, shouldAutomaticallyDownloadAllPokemon: false)
-      .environment(\.managedObjectContext, persistence.container.viewContext)
-  }
+#Preview {
+  let controller = DataController.preview
+  
+  return ContentView(controller: controller, shouldAutomaticallyDownloadAllPokemon: false)
+    .modelContainer(controller.container)
 }
+

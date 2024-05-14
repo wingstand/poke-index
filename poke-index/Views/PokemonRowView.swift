@@ -17,14 +17,13 @@ struct PokemonRowView: View {
   /// The height of the image in regular view. This is scaled according to the dynamic type settings
   @ScaledMetric var regularImageHeight: CGFloat = 64
   
-  @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.modelContext) private var modelContext
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.verticalSizeClass) private var verticalSizeClass
-
-  /// The persistence controller, which controls access to the Core Data
-  /// store. Uses the shared one by default, but previews set it to the
-  /// preview controller
-  var persistence: PersistenceController = .shared
+  
+  /// The controller used for downloading data from the server. Defaults to shared
+  /// but previews have their own in-memory versions
+  var controller: DataController = .shared
   
   /// The Pokémon this row displays.
   @ObservedObject var pokemon: Pokemon
@@ -120,7 +119,7 @@ struct PokemonRowView: View {
       return Image(uiImage: uiImage)
     }
     else {
-      persistence.startNextDownload(forPokemon: pokemon)
+      controller.startNextDownload(forPokemon: pokemon)
       
       return nil
     }
@@ -129,12 +128,10 @@ struct PokemonRowView: View {
 
 // MARK: - previews
 
-struct PokemonRowView_Previews: PreviewProvider {
-  static var previews: some View {
-    let persistence = PersistenceController.preview
-    let pokemon = persistence.pokemon(forNumber: 10118)!
-    
-    PokemonRowView(persistence: persistence, pokemon: pokemon)
-      .environment(\.managedObjectContext, persistence.container.viewContext)
-  }
+#Preview {
+  let controller = DataController.preview
+  let pokemon = controller.pokemon(forNumber: 10118)!
+  
+  return PokemonRowView(controller: controller, pokemon: pokemon)
+    .modelContainer(controller.container)
 }

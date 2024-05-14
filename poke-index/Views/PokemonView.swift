@@ -14,15 +14,14 @@ struct PokemonView: View {
   /// The height of the image in regular view. This is scaled according to the dynamic type settings
   @ScaledMetric var regularImageHeight: CGFloat = 80
 
-  @Environment(\.managedObjectContext) private var viewContext
+  @Environment(\.modelContext) private var modelContext
   @Environment(\.horizontalSizeClass) private var horizontalSizeClass
   @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-  /// The persistence controller, which controls access to the Core Data
-  /// store. Uses the shared one by default, but previews set it to the
-  /// preview controller.
-  var persistence: PersistenceController = .shared
-
+  /// The controller used for downloading data from the server. Defaults to shared
+  /// but previews have their own in-memory versions
+  var controller: DataController = .shared
+  
   /// The Pokémon this view displays.
   @ObservedObject var pokemon: Pokemon
   
@@ -39,14 +38,11 @@ struct PokemonView: View {
       }
       
       Section {
-        StatisticView(pokemon: pokemon, statistic: .hp)
-        StatisticView(pokemon: pokemon, statistic: .attack)
-        StatisticView(pokemon: pokemon, statistic: .defense)
-        StatisticView(pokemon: pokemon, statistic: .specialAttack)
-        StatisticView(pokemon: pokemon, statistic: .specialDefense)
-        StatisticView(pokemon: pokemon, statistic: .speed)
+        ForEach(pokemon.statistics) {
+          statistic in StatisticView(statistic: statistic)
+        }
         
-        TotalStatisticView(pokemon: pokemon)
+        TotalStatisticView(total: pokemon.totalStatistic)
       }
     }
     .navigationTitle(pokemon.displayName)
@@ -56,22 +52,24 @@ struct PokemonView: View {
   private var textView: some View {
     VStack(alignment: .leading, spacing: 3) {
       if horizontalSizeClass == .compact && verticalSizeClass == .compact {
-          HStack {
+        HStack {
+          VStack {
             Text("#\(pokemon.number) \(pokemon.displayName)")
               .font(.headline)
               .foregroundColor(.primary)
             
-            Spacer()
-            PokemonTypeView(pokemon: pokemon, slot: 1)
+            Text("\(pokemon.weightDescription), \(pokemon.heightDescription), base experience: \(pokemon.baseExperience)")
+              .font(.body)
+              .foregroundColor(.secondary)
           }
-
-        HStack {
-          Text("\(pokemon.weightDescription), \(pokemon.heightDescription), base experience: \(pokemon.baseExperience)")
-            .font(.body)
-            .foregroundColor(.secondary)
           
           Spacer()
-          PokemonTypeView(pokemon: pokemon, slot: 2)
+          
+          VStack(spacing: 5) {
+            ForEach(pokemon.types, id: \.self) {
+              type in PokemonTypeView(type: type)
+            }
+          }
         }
       }
       else {
@@ -88,8 +86,9 @@ struct PokemonView: View {
           .foregroundColor(.primary)
         
         HStack(spacing: 10) {
-          PokemonTypeView(pokemon: pokemon, slot: 1)
-          PokemonTypeView(pokemon: pokemon, slot: 2)
+          ForEach(pokemon.types, id: \.self) {
+            type in PokemonTypeView(type: type)
+          }
         }
       }
     }
@@ -105,21 +104,16 @@ struct PokemonView: View {
     components.append("Height: \(pokemon.fullHeightDescription)")
     components.append("Base experience: \(pokemon.baseExperience)")
    
-    if let type1 = pokemon.type(forSlot: 1) {
-      if let type2 = pokemon.type(forSlot: 2) {
-        components.append("Types: \(type1) and \(type2)")
-      }
-      else {
-        components.append("Type: \(type1)")
-      }
-    }
-    else {
-      if let type2 = pokemon.type(forSlot: 2) {
-        components.append("Type: \(type2)")
-      }
-      else {
-        components.append("No types")
-      }
+    switch pokemon.types.count {
+    case 0:
+      components.append("No types")
+    case 1:
+      components.append("Type: \(pokemon.types[0])")
+    case 2:
+      components.append("Type: \(pokemon.types[0]) and \(pokemon.types[1])")
+    default:
+      // There should be at most two types
+      break
     }
                         
     return components.joined(separator: ". ")
@@ -153,7 +147,7 @@ struct PokemonView: View {
       return Image(uiImage: uiImage)
     }
     else {
-      persistence.startNextDownload(forPokemon: pokemon)
+      controller.startNextDownload(forPokemon: pokemon)
       
       return nil
     }
@@ -162,23 +156,10 @@ struct PokemonView: View {
 
 // MARK: - previews
 
-struct PokemonView_Previews: PreviewProvider {
-  struct Container: View {
-    var persistence: PersistenceController
-    @State var pokemon: Pokemon
-    
-    var body: some View {
-      NavigationStack {
-        PokemonView(persistence: persistence, pokemon: pokemon)
-      }
-      .environment(\.managedObjectContext, persistence.container.viewContext)
-    }
-  }
+#Preview {
+  let controller = DataController.preview
+  let pokemon = controller.pokemon(forNumber: 10118)!
   
-  static var previews: some View {
-    let persistence = PersistenceController.preview
-    let pokemon = persistence.pokemon(forNumber: 10118)!
-    
-    Container(persistence: persistence, pokemon: pokemon)
-  }
+  return PokemonView(controller: controller, pokemon: pokemon)
+    .modelContainer(controller.container)
 }

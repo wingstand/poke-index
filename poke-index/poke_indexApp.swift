@@ -9,12 +9,12 @@ import SwiftUI
 
 @main
 struct poke_indexApp: App {
-  let persistenceController = PersistenceController.shared
+  let controller = DataController.shared
   
   var body: some Scene {
     WindowGroup {
       ContentView()
-        .environment(\.managedObjectContext, persistenceController.container.viewContext)
+        .modelContainer(controller.container)
     }
   }
 }

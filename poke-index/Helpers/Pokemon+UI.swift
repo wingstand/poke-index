@@ -17,7 +17,7 @@ extension Pokemon {
   
   /// The name to use when displaying this Pokémon
   var displayName: String {
-    return name?.replacingOccurrences(of: "-", with: " ").capitalized ?? "Anonymous"
+    return name.replacingOccurrences(of: "-", with: " ").capitalized
   }
     
   /// The weight measurement for this Pokémon.
